@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英語詞素大師 Morpheme Master · 字首字根字尾學習系統</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { darkMode: 'class' };
+</script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+// ============ FIREBASE CONFIG ============
+// 請將下方的佔位符替換為你的 Firebase 專案設定值
+// (Firebase Console → 專案設定 → 你的應用程式 → SDK 設定)
+const firebaseConfig = {
+  apiKey:            "AIzaSyDXm8DeU42TMW0Yk02jsuJ4ClJJdsv0Ntk",
+  authDomain:        "morpheme-master.firebaseapp.com",
+  projectId:         "morpheme-master",
+  storageBucket:     "morpheme-master.firebasestorage.app",
+  messagingSenderId: "664941956062",
+  appId:             "1:664941956062:web:0a28f31434865981a56b4f"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+</script>
+<style>
+  :root { --brand: #4f46e5; }
+  * { -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
+  .card { transition: transform .18s ease, box-shadow .18s ease; }
+  .card:hover { transform: translateY(-2px); }
+  .chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; letter-spacing: .02em; }
+  .pulse-ring { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+  .flip-card { perspective: 1000px; }
+  .flip-inner { transition: transform .5s; transform-style: preserve-3d; position: relative; }
+  .flip-card.is-flipped .flip-inner { transform: rotateY(180deg); }
+  .flip-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .flip-back { transform: rotateY(180deg); position: absolute; inset: 0; }
+  .answer-btn { transition: all .15s; }
+  .answer-btn:hover { transform: translateY(-1px); }
+  .answer-btn.correct { background: #10b981 !important; color: white !important; border-color: #10b981 !important; }
+  .answer-btn.wrong { background: #ef4444 !important; color: white !important; border-color: #ef4444 !important; }
+  .progress-bar { background: linear-gradient(90deg, #4f46e5, #7c3aed); }
+  .heat-0 { background: #f3f4f6; }
+  .heat-1 { background: #c7d2fe; }
+  .heat-2 { background: #818cf8; }
+  .heat-3 { background: #6366f1; }
+  .heat-4 { background: #4338ca; }
+  .heat-5 { background: #312e81; color: white; }
+  .dark .heat-0 { background: #1f2937; }
+  .sidebar-link.active { background: linear-gradient(90deg, rgba(79,70,229,.15), transparent); border-left: 3px solid var(--brand); }
+  .scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scroll-thin::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 3px; }
+  .tap { cursor: pointer; user-select: none; }
+  kbd { font-family: monospace; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #e5e7eb; border: 1px solid #d1d5db; }
+  .dark kbd { background: #374151; border-color: #4b5563; color: #e5e7eb; }
+  @media (max-width: 768px) { .hide-sm { display: none; } }
+  .toast { animation: slide-up .3s ease; }
+  @keyframes slide-up { from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+</style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen">
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="loginScreen" class="fixed inset-0 bg-gradient-to-br from-indigo-900 to-slate-900 z-[200] flex items-center justify-center">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-2xl text-center max-w-sm w-full mx-4">
+    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4">M</div>
+    <h1 class="font-bold text-xl mb-1">詞素大師</h1>
+    <p class="text-slate-500 text-sm mb-1">Morpheme Master</p>
+    <p class="text-slate-400 text-xs mb-6">登入以跨裝置同步學習進度</p>
+    <button id="googleSignInBtn" class="w-full flex items-center justify-center gap-3 py-3 px-4 border-2 border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition font-medium text-sm">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M45.12 24.5c0-1.57-.14-3.08-.4-4.54H24v8.59h11.84c-.51 2.75-2.06 5.08-4.38 6.64v5.52h7.1c4.16-3.83 6.56-9.47 6.56-16.21z"/><path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.1-5.52c-1.97 1.32-4.49 2.1-7.46 2.1-5.74 0-10.6-3.88-12.33-9.09H4.34v5.7C7.96 41.07 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.67 28.16A14.26 14.26 0 0 1 10.88 24c0-1.44.25-2.84.79-4.16v-5.7H4.34A23.93 23.93 0 0 0 .12 24c0 3.88.93 7.55 2.56 10.82l7.15-5.54-.16-.12z"/><path fill="#EA4335" d="M24 9.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 3.19 29.93 1 24 1 15.4 1 7.96 5.93 4.34 13.14l7.33 5.7C13.4 13.63 18.26 9.75 24 9.75z"/></svg>
+      以 Google 帳號登入
+    </button>
+    <p id="loginError" class="text-red-500 text-xs mt-3 hidden"></p>
+  </div>
+</div>
+
+<div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 hide-sm sticky top-0 h-screen flex flex-col">
+    <div class="p-5 border-b border-slate-200 dark:border-slate-700">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">M</div>
+        <div>
+          <div class="font-bold text-sm">詞素大師</div>
+          <div class="text-[11px] text-slate-500">Morpheme Master</div>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 p-3 space-y-1">
+      <a data-view="dashboard" class="sidebar-link tap flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-sm">
+        <span>🏠</span><span>儀表板</span>
+      </a>
+      <a data-view="learn" class="sidebar-link tap flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-sm">
+        <span>📚</span><span>學習新詞素</span>
+      </a>
+      <a data-view="review" class="sidebar-link tap flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-sm">
+        <span>🔁</span><span>間隔複習 <span id="reviewBadge" class="ml-auto chip bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200"></span></span>
+      </a>
+      <a data-view="practice" class="sidebar-link tap flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-sm">
+        <span>🎯</span><span>自由練習</span>
+      </a>
+      <a data-view="errors" class="sidebar-link tap flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-sm">
+        <span>⚠️</span><span>錯題強化 <span id="errorBadge" class="ml-auto chip bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"></span></span>
+      </a>
+      <a data-view="browse" class="sidebar-link tap flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-sm">
+        <span>🔍</span><span>詞素字典</span>
+      </a>
+      <a data-view="stats" class="sidebar-link tap flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-sm">
+        <span>📊</span><span>學習統計</span>
+      </a>
+      <a data-view="settings" class="sidebar-link tap flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-sm">
+        <span>⚙️</span><span>設定</span>
+      </a>
+    </nav>
+    <div class="p-3 border-t border-slate-200 dark:border-slate-700 space-y-2">
+      <button id="darkToggle" class="w-full text-xs px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600">🌓 切換深淺色</button>
+      <!-- User profile -->
+      <div id="userProfile" class="hidden flex items-center gap-2 px-2 py-1">
+        <img id="userAvatar" src="" class="w-7 h-7 rounded-full object-cover border border-slate-200" alt="">
+        <div class="flex-1 min-w-0">
+          <div id="userName" class="text-xs font-medium truncate"></div>
+          <div class="text-[10px] text-green-500">☁ 雲端同步中</div>
+        </div>
+        <button id="logoutBtn" title="登出" class="text-slate-400 hover:text-red-500 text-xs px-1">⏏</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile Nav -->
+  <div class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-40">
+    <div class="grid grid-cols-5 text-xs">
+      <a data-view="dashboard" class="sidebar-link tap flex flex-col items-center py-2">🏠<span>主頁</span></a>
+      <a data-view="learn" class="sidebar-link tap flex flex-col items-center py-2">📚<span>學習</span></a>
+      <a data-view="review" class="sidebar-link tap flex flex-col items-center py-2">🔁<span>複習</span></a>
+      <a data-view="errors" class="sidebar-link tap flex flex-col items-center py-2">⚠️<span>錯題</span></a>
+      <a data-view="browse" class="sidebar-link tap flex flex-col items-center py-2">🔍<span>字典</span></a>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <main class="flex-1 min-w-0">
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-3 sticky top-0 z-30 backdrop-blur bg-opacity-80 dark:bg-opacity-80">
+      <div class="flex items-center justify-between gap-4">
+        <h2 id="pageTitle" class="font-bold text-lg">儀表板</h2>
+        <div class="flex items-center gap-3 text-sm">
+          <span class="hide-sm text-slate-500">今日已學 <b id="todayCount" class="text-indigo-600">0</b></span>
+          <span class="hide-sm text-slate-500">連續 <b id="streakCount" class="text-orange-600">0</b> 天</span>
+        </div>
+      </div>
+    </header>
+    <div id="app" class="p-4 md:p-6 pb-24 md:pb-6"></div>
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 hidden">
+  <div class="toast bg-slate-900 dark:bg-slate-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm"></div>
+</div>
+
+<script>
+// ============ DATA: 詞素資料庫 (字首 + 字根 + 字尾) ============
+const MORPHEMES = [
+  // ============ PREFIXES 字首 (方位/時間) ============
+  { id:'ante', type:'prefix', form:'ante-', cat:'方位時間', zh:'在前、之前', en:'before, in front of', examples:[{w:'antecedent',m:'先前的、前例'},{w:'antebellum',m:'戰前的'},{w:'antedate',m:'早於、提前日期'}] },
+  { id:'pre', type:'prefix', form:'pre-', cat:'方位時間', zh:'在…之前、預先', en:'before, prior to', examples:[{w:'predict',m:'預測'},{w:'prevent',m:'預防'},{w:'preview',m:'預覽'}] },
+  { id:'pro', type:'prefix', form:'pro-', cat:'方位時間', zh:'向前、代替、贊同', en:'forward, in favor of', examples:[{w:'proceed',m:'前進'},{w:'propose',m:'提議'},{w:'prologue',m:'序言'}] },
+  { id:'fore', type:'prefix', form:'fore-', cat:'方位時間', zh:'前面、預先', en:'before, in front', examples:[{w:'forecast',m:'預報'},{w:'foresee',m:'預見'},{w:'forehead',m:'前額'}] },
+  { id:'post', type:'prefix', form:'post-', cat:'方位時間', zh:'在…之後', en:'after, behind', examples:[{w:'postpone',m:'延遲'},{w:'postscript',m:'附筆(P.S.)'},{w:'postwar',m:'戰後的'}] },
+  { id:'re', type:'prefix', form:'re-', cat:'方位時間', zh:'再、重新、回', en:'again, back', examples:[{w:'return',m:'返回'},{w:'review',m:'複習'},{w:'reject',m:'拒絕'}] },
+  { id:'retro', type:'prefix', form:'retro-', cat:'方位時間', zh:'向後、倒退', en:'backward', examples:[{w:'retrospect',m:'回顧'},{w:'retrograde',m:'倒退的'},{w:'retroactive',m:'追溯的'}] },
+  { id:'ex', type:'prefix', form:'ex-/e-', cat:'方位時間', zh:'向外、出、前任', en:'out, out of, former', examples:[{w:'exit',m:'出口'},{w:'export',m:'出口(輸出)'},{w:'exclude',m:'排除'}] },
+  { id:'extra', type:'prefix', form:'extra-', cat:'方位時間', zh:'在…之外、超出', en:'outside, beyond', examples:[{w:'extraordinary',m:'非凡的'},{w:'extraterrestrial',m:'外星的'}] },
+  { id:'intra', type:'prefix', form:'intra-', cat:'方位時間', zh:'在內、向內', en:'within, inside', examples:[{w:'intranet',m:'內部網路'},{w:'intravenous',m:'靜脈內的'}] },
+  { id:'intro', type:'prefix', form:'intro-', cat:'方位時間', zh:'向內、進入', en:'into, within', examples:[{w:'introduce',m:'介紹'},{w:'introvert',m:'內向者'}] },
+  { id:'in_into', type:'prefix', form:'in-/im-', cat:'方位時間', zh:'進入、向內', en:'in, into', examples:[{w:'inject',m:'注射'},{w:'import',m:'進口'},{w:'immerse',m:'浸入'}], note:'此 in- 表「進入」，與否定的 in- 同形異義' },
+  { id:'en', type:'prefix', form:'en-/em-', cat:'方位時間', zh:'使進入、使成為', en:'to put into, to make', examples:[{w:'enclose',m:'圍住'},{w:'empower',m:'賦權'},{w:'embrace',m:'擁抱'}] },
+  { id:'out', type:'prefix', form:'out-', cat:'方位時間', zh:'向外、超過', en:'out, beyond', examples:[{w:'outlook',m:'展望'},{w:'outnumber',m:'數量超過'},{w:'outbreak',m:'爆發'}] },
+  { id:'over', type:'prefix', form:'over-', cat:'方位時間', zh:'在上、過度', en:'over, above, excessive', examples:[{w:'overlook',m:'俯瞰/忽略'},{w:'overcome',m:'克服'},{w:'overestimate',m:'高估'}] },
+  { id:'super', type:'prefix', form:'super-', cat:'方位時間', zh:'在上、超越', en:'above, over, beyond', examples:[{w:'superior',m:'上級的'},{w:'supervise',m:'監督'},{w:'superb',m:'極好的'}] },
+  { id:'supra', type:'prefix', form:'supra-', cat:'方位時間', zh:'在…之上', en:'above, over', examples:[{w:'supranational',m:'超國家的'},{w:'supraorbital',m:'眼窩上的'}] },
+  { id:'sur', type:'prefix', form:'sur-', cat:'方位時間', zh:'超出、在上', en:'over, above', examples:[{w:'surface',m:'表面'},{w:'surpass',m:'超越'},{w:'surmount',m:'克服'}] },
+  { id:'sub', type:'prefix', form:'sub-/sup-/suf-', cat:'方位時間', zh:'在下、次級', en:'under, below', examples:[{w:'submarine',m:'潛艇'},{w:'suppress',m:'壓制'},{w:'suffer',m:'受苦'}] },
+  { id:'infra', type:'prefix', form:'infra-', cat:'方位時間', zh:'在下、次於', en:'below, beneath', examples:[{w:'infrastructure',m:'基礎建設'},{w:'infrared',m:'紅外線的'}] },
+  { id:'under', type:'prefix', form:'under-', cat:'方位時間', zh:'在下、不足', en:'below, insufficient', examples:[{w:'underestimate',m:'低估'},{w:'undergo',m:'經歷'},{w:'underline',m:'劃底線'}] },
+  { id:'hypo', type:'prefix', form:'hypo-', cat:'方位時間', zh:'在下、不足', en:'under, below normal', examples:[{w:'hypothesis',m:'假設'},{w:'hypothermia',m:'體溫過低'}] },
+  { id:'hyper', type:'prefix', form:'hyper-', cat:'方位時間', zh:'過度、超越', en:'over, excessive', examples:[{w:'hyperactive',m:'過動的'},{w:'hypertension',m:'高血壓'},{w:'hyperbole',m:'誇飾'}] },
+  { id:'per', type:'prefix', form:'per-', cat:'方位時間', zh:'貫穿、徹底', en:'through, thoroughly', examples:[{w:'perceive',m:'察覺'},{w:'permanent',m:'永久的'},{w:'perspire',m:'流汗'}] },
+  { id:'trans', type:'prefix', form:'trans-', cat:'方位時間', zh:'橫跨、轉移', en:'across, beyond', examples:[{w:'transfer',m:'轉移'},{w:'translate',m:'翻譯'},{w:'transport',m:'運輸'}] },
+  { id:'dia', type:'prefix', form:'dia-', cat:'方位時間', zh:'穿過、橫過', en:'across, through', examples:[{w:'diameter',m:'直徑'},{w:'diagnose',m:'診斷'},{w:'dialogue',m:'對話'}] },
+  { id:'inter', type:'prefix', form:'inter-', cat:'方位時間', zh:'在…之間、互相', en:'between, among', examples:[{w:'international',m:'國際的'},{w:'interrupt',m:'打斷'},{w:'interact',m:'互動'}] },
+  { id:'circum', type:'prefix', form:'circum-', cat:'方位時間', zh:'環繞、周圍', en:'around', examples:[{w:'circumstance',m:'環境'},{w:'circumference',m:'周長'},{w:'circumvent',m:'規避'}] },
+  { id:'peri', type:'prefix', form:'peri-', cat:'方位時間', zh:'周圍、附近', en:'around, near', examples:[{w:'perimeter',m:'周長'},{w:'periscope',m:'潛望鏡'}] },
+  { id:'ambi', type:'prefix', form:'ambi-/amphi-', cat:'方位時間', zh:'兩邊、周圍', en:'both, around', examples:[{w:'ambiguous',m:'模稜兩可的'},{w:'ambition',m:'野心'},{w:'amphibian',m:'兩棲動物'}] },
+  { id:'meta', type:'prefix', form:'meta-', cat:'方位時間', zh:'之後、超越、變化', en:'beyond, change', examples:[{w:'metaphor',m:'隱喻'},{w:'metamorphosis',m:'變態'},{w:'metabolism',m:'新陳代謝'}] },
+  { id:'ultra', type:'prefix', form:'ultra-', cat:'方位時間', zh:'超越、極度', en:'beyond, extremely', examples:[{w:'ultraviolet',m:'紫外線的'},{w:'ultrasonic',m:'超音波的'}] },
+  { id:'para', type:'prefix', form:'para-', cat:'方位時間', zh:'在旁、超出', en:'beside, beyond', examples:[{w:'parallel',m:'平行的'},{w:'paradox',m:'悖論'},{w:'paragraph',m:'段落'}] },
+  { id:'ana', type:'prefix', form:'ana-', cat:'方位時間', zh:'向上、向後、重新', en:'up, back, again', examples:[{w:'analysis',m:'分析'},{w:'anatomy',m:'解剖'},{w:'analog',m:'類似物'}] },
+  { id:'cata', type:'prefix', form:'cata-', cat:'方位時間', zh:'向下、完全', en:'down, completely', examples:[{w:'catastrophe',m:'災難'},{w:'catalog',m:'目錄'}] },
+  { id:'de', type:'prefix', form:'de-', cat:'方位時間', zh:'向下、離開、否定', en:'down, away, reverse', examples:[{w:'descend',m:'下降'},{w:'depart',m:'離開'},{w:'decode',m:'解碼'}] },
+  { id:'ab', type:'prefix', form:'ab-/abs-', cat:'方位時間', zh:'離開、脫離', en:'away from', examples:[{w:'absent',m:'缺席的'},{w:'abduct',m:'綁架'},{w:'abstract',m:'抽象的'}] },
+  { id:'ad', type:'prefix', form:'ad-/ac-/ap-/as-/at-', cat:'方位時間', zh:'向、朝', en:'to, toward', examples:[{w:'admit',m:'承認'},{w:'accept',m:'接受'},{w:'approve',m:'贊成'}] },
+  { id:'con', type:'prefix', form:'con-/com-/col-/cor-/co-', cat:'方位時間', zh:'一起、共同、完全', en:'with, together', examples:[{w:'connect',m:'連接'},{w:'combine',m:'結合'},{w:'collect',m:'收集'}] },
+  { id:'syn', type:'prefix', form:'syn-/sym-', cat:'方位時間', zh:'共同、一起', en:'together, with', examples:[{w:'synthesis',m:'合成'},{w:'sympathy',m:'同情'},{w:'synchronize',m:'同步'}] },
+  { id:'se', type:'prefix', form:'se-', cat:'方位時間', zh:'分開、離開', en:'apart, aside', examples:[{w:'separate',m:'分開'},{w:'select',m:'選擇'},{w:'secede',m:'脫離'}] },
+  { id:'dis', type:'prefix', form:'dis-/dif-', cat:'方位時間', zh:'分開、否定、相反', en:'apart, not, opposite', examples:[{w:'disappear',m:'消失'},{w:'differ',m:'不同'},{w:'dismiss',m:'解散'}] },
+
+  // ============ PREFIXES (否定) ============
+  { id:'un', type:'prefix', form:'un-', cat:'否定相反', zh:'不、非、相反', en:'not, opposite of', examples:[{w:'unhappy',m:'不快樂的'},{w:'unfair',m:'不公平的'},{w:'undo',m:'復原'}] },
+  { id:'non', type:'prefix', form:'non-', cat:'否定相反', zh:'不、非', en:'not', examples:[{w:'nonsense',m:'胡說'},{w:'nonstop',m:'不停的'}] },
+  { id:'in_not', type:'prefix', form:'in-/im-/il-/ir-', cat:'否定相反', zh:'不、非', en:'not', examples:[{w:'invisible',m:'看不見的'},{w:'impossible',m:'不可能的'},{w:'illegal',m:'違法的'},{w:'irregular',m:'不規則的'}] },
+  { id:'a_not', type:'prefix', form:'a-/an-', cat:'否定相反', zh:'無、沒有', en:'without, not', examples:[{w:'atypical',m:'非典型的'},{w:'anonymous',m:'匿名的'},{w:'apathy',m:'冷漠'}] },
+  { id:'anti', type:'prefix', form:'anti-', cat:'否定相反', zh:'反對、相對', en:'against, opposite', examples:[{w:'antibiotic',m:'抗生素'},{w:'antisocial',m:'反社會的'},{w:'antonym',m:'反義字'}] },
+  { id:'contra', type:'prefix', form:'contra-/contro-/counter-', cat:'否定相反', zh:'反對、相反', en:'against', examples:[{w:'contradict',m:'反駁'},{w:'contrast',m:'對比'},{w:'counteract',m:'抵消'}] },
+  { id:'ob', type:'prefix', form:'ob-/oc-/of-/op-', cat:'否定相反', zh:'反對、朝向', en:'against, toward', examples:[{w:'object',m:'反對'},{w:'obstacle',m:'障礙'},{w:'oppose',m:'反對'}] },
+  { id:'mal', type:'prefix', form:'mal-', cat:'否定相反', zh:'壞、惡、不良', en:'bad, ill', examples:[{w:'malfunction',m:'故障'},{w:'malice',m:'惡意'},{w:'malnutrition',m:'營養不良'}] },
+  { id:'mis', type:'prefix', form:'mis-', cat:'否定相反', zh:'錯、誤', en:'wrong, badly', examples:[{w:'mistake',m:'錯誤'},{w:'misunderstand',m:'誤會'},{w:'misuse',m:'誤用'}] },
+  { id:'pseudo', type:'prefix', form:'pseudo-', cat:'否定相反', zh:'假、偽', en:'false', examples:[{w:'pseudonym',m:'筆名'},{w:'pseudoscience',m:'偽科學'}] },
+  { id:'dys', type:'prefix', form:'dys-', cat:'否定相反', zh:'不良、困難', en:'bad, difficult', examples:[{w:'dysfunction',m:'功能失調'},{w:'dyslexia',m:'閱讀障礙'}] },
+  { id:'eu', type:'prefix', form:'eu-', cat:'否定相反', zh:'好、優良', en:'good, well', examples:[{w:'euphoria',m:'欣快感'},{w:'eulogy',m:'頌詞'},{w:'euphemism',m:'委婉語'}] },
+  { id:'bene', type:'prefix', form:'bene-/bon-', cat:'否定相反', zh:'善、好', en:'good, well', examples:[{w:'benefit',m:'益處'},{w:'benevolent',m:'仁慈的'},{w:'bonus',m:'紅利'}] },
+
+  // ============ PREFIXES (數量) ============
+  { id:'mono', type:'prefix', form:'mono-', cat:'數量', zh:'單一', en:'one, single', examples:[{w:'monopoly',m:'壟斷'},{w:'monologue',m:'獨白'},{w:'monotone',m:'單調'}] },
+  { id:'uni', type:'prefix', form:'uni-', cat:'數量', zh:'一、單一', en:'one', examples:[{w:'unique',m:'獨特的'},{w:'uniform',m:'制服、一致'},{w:'unite',m:'聯合'}] },
+  { id:'bi', type:'prefix', form:'bi-/bis-', cat:'數量', zh:'二、兩', en:'two', examples:[{w:'bicycle',m:'自行車'},{w:'bilingual',m:'雙語的'},{w:'biweekly',m:'雙週的'}] },
+  { id:'di_two', type:'prefix', form:'di-', cat:'數量', zh:'二、雙', en:'two, double', examples:[{w:'dioxide',m:'二氧化物'},{w:'dilemma',m:'兩難'}] },
+  { id:'tri', type:'prefix', form:'tri-', cat:'數量', zh:'三', en:'three', examples:[{w:'triangle',m:'三角形'},{w:'tripod',m:'三腳架'},{w:'trilogy',m:'三部曲'}] },
+  { id:'quad', type:'prefix', form:'quadr-/tetra-', cat:'數量', zh:'四', en:'four', examples:[{w:'quadruple',m:'四倍'},{w:'quartet',m:'四重奏'},{w:'tetrahedron',m:'四面體'}] },
+  { id:'penta', type:'prefix', form:'penta-/quint-', cat:'數量', zh:'五', en:'five', examples:[{w:'pentagon',m:'五邊形'},{w:'quintet',m:'五重奏'}] },
+  { id:'hexa', type:'prefix', form:'hexa-/sex-', cat:'數量', zh:'六', en:'six', examples:[{w:'hexagon',m:'六邊形'},{w:'sextet',m:'六重奏'}] },
+  { id:'septa', type:'prefix', form:'hept-/sept-', cat:'數量', zh:'七', en:'seven', examples:[{w:'heptagon',m:'七邊形'},{w:'September',m:'（原為第七月）九月'}] },
+  { id:'octa', type:'prefix', form:'octa-/oct-', cat:'數量', zh:'八', en:'eight', examples:[{w:'octopus',m:'章魚'},{w:'October',m:'（原為第八月）十月'}] },
+  { id:'nona', type:'prefix', form:'nona-/non-', cat:'數量', zh:'九', en:'nine', examples:[{w:'nonagon',m:'九邊形'},{w:'November',m:'（原為第九月）十一月'}] },
+  { id:'deca', type:'prefix', form:'deca-/dec-', cat:'數量', zh:'十', en:'ten', examples:[{w:'decade',m:'十年'},{w:'decimal',m:'十進位的'}] },
+  { id:'cent', type:'prefix', form:'cent-/centi-', cat:'數量', zh:'百、百分之一', en:'hundred', examples:[{w:'century',m:'世紀'},{w:'centimeter',m:'公分'},{w:'percent',m:'百分比'}] },
+  { id:'milli', type:'prefix', form:'milli-/mille-', cat:'數量', zh:'千、千分之一', en:'thousand', examples:[{w:'millennium',m:'千禧年'},{w:'millimeter',m:'毫米'}] },
+  { id:'kilo', type:'prefix', form:'kilo-', cat:'數量', zh:'千', en:'thousand', examples:[{w:'kilogram',m:'公斤'},{w:'kilometer',m:'公里'}] },
+  { id:'mega', type:'prefix', form:'mega-', cat:'數量', zh:'大、百萬', en:'great, million', examples:[{w:'megaphone',m:'擴音器'},{w:'megabyte',m:'百萬位元組'}] },
+  { id:'micro', type:'prefix', form:'micro-', cat:'數量', zh:'微小', en:'small', examples:[{w:'microscope',m:'顯微鏡'},{w:'microwave',m:'微波'}] },
+  { id:'macro', type:'prefix', form:'macro-', cat:'數量', zh:'大、巨', en:'large, long', examples:[{w:'macroeconomics',m:'總體經濟學'},{w:'macrocosm',m:'宏觀世界'}] },
+  { id:'mini', type:'prefix', form:'mini-', cat:'數量', zh:'小', en:'small', examples:[{w:'miniature',m:'小型的'},{w:'minimum',m:'最小'}] },
+  { id:'semi', type:'prefix', form:'semi-/hemi-/demi-', cat:'數量', zh:'半', en:'half, partly', examples:[{w:'semicircle',m:'半圓'},{w:'hemisphere',m:'半球'},{w:'demigod',m:'半神'}] },
+  { id:'multi', type:'prefix', form:'multi-', cat:'數量', zh:'多', en:'many, much', examples:[{w:'multimedia',m:'多媒體'},{w:'multiply',m:'相乘'}] },
+  { id:'poly', type:'prefix', form:'poly-', cat:'數量', zh:'多', en:'many', examples:[{w:'polygon',m:'多邊形'},{w:'polyglot',m:'通曉多語的'}] },
+  { id:'omni', type:'prefix', form:'omni-', cat:'數量', zh:'全、所有', en:'all', examples:[{w:'omnipresent',m:'無所不在的'},{w:'omnivore',m:'雜食動物'}] },
+  { id:'pan', type:'prefix', form:'pan-', cat:'數量', zh:'全、泛', en:'all, every', examples:[{w:'pandemic',m:'大流行病'},{w:'panorama',m:'全景'}] },
+  { id:'holo', type:'prefix', form:'holo-', cat:'數量', zh:'全、整', en:'whole', examples:[{w:'hologram',m:'全像圖'},{w:'holistic',m:'整體的'}] },
+  { id:'proto', type:'prefix', form:'proto-', cat:'數量', zh:'原始、第一', en:'first, original', examples:[{w:'prototype',m:'原型'},{w:'protocol',m:'協議'}] },
+  { id:'arch', type:'prefix', form:'arch-/archi-', cat:'數量', zh:'主要、首', en:'chief, first', examples:[{w:'architect',m:'建築師'},{w:'archbishop',m:'大主教'}] },
+  { id:'neo', type:'prefix', form:'neo-', cat:'數量', zh:'新', en:'new', examples:[{w:'neonatal',m:'新生的'},{w:'neologism',m:'新詞'}] },
+  { id:'paleo', type:'prefix', form:'paleo-', cat:'數量', zh:'古、舊', en:'old, ancient', examples:[{w:'paleontology',m:'古生物學'}] },
+
+  // ============ PREFIXES (其他) ============
+  { id:'auto', type:'prefix', form:'auto-', cat:'其他', zh:'自己、自動', en:'self', examples:[{w:'automatic',m:'自動的'},{w:'autobiography',m:'自傳'},{w:'autonomy',m:'自治'}] },
+  { id:'homo', type:'prefix', form:'homo-', cat:'其他', zh:'相同', en:'same', examples:[{w:'homogeneous',m:'同質的'},{w:'homonym',m:'同音字'}] },
+  { id:'hetero', type:'prefix', form:'hetero-', cat:'其他', zh:'不同', en:'different', examples:[{w:'heterogeneous',m:'異質的'},{w:'heterosexual',m:'異性戀的'}] },
+  { id:'iso', type:'prefix', form:'iso-', cat:'其他', zh:'相等', en:'equal', examples:[{w:'isotope',m:'同位素'},{w:'isobar',m:'等壓線'}] },
+  { id:'equi', type:'prefix', form:'equi-', cat:'其他', zh:'相等、均等', en:'equal', examples:[{w:'equivalent',m:'相等的'},{w:'equilibrium',m:'平衡'}] },
+  { id:'tele', type:'prefix', form:'tele-', cat:'其他', zh:'遠', en:'far, distant', examples:[{w:'telephone',m:'電話'},{w:'telescope',m:'望遠鏡'},{w:'television',m:'電視'}] },
+  { id:'bio_p', type:'prefix', form:'bio-', cat:'其他', zh:'生命', en:'life', examples:[{w:'biology',m:'生物學'},{w:'biography',m:'傳記'}] },
+  { id:'geo_p', type:'prefix', form:'geo-', cat:'其他', zh:'地、地球', en:'earth', examples:[{w:'geography',m:'地理學'},{w:'geology',m:'地質學'}] },
+  { id:'thermo', type:'prefix', form:'thermo-', cat:'其他', zh:'熱', en:'heat', examples:[{w:'thermometer',m:'溫度計'},{w:'thermodynamics',m:'熱力學'}] },
+  { id:'photo', type:'prefix', form:'photo-', cat:'其他', zh:'光', en:'light', examples:[{w:'photograph',m:'照片'},{w:'photosynthesis',m:'光合作用'}] },
+
+  // ============ ROOTS 字根 (動作) ============
+  { id:'act', type:'root', form:'act/ag', cat:'動作', zh:'做、行動', en:'to do, to drive', examples:[{w:'action',m:'行動'},{w:'agent',m:'代理人'},{w:'agitate',m:'煽動'}] },
+  { id:'fac', type:'root', form:'fac/fect/fic/fy', cat:'動作', zh:'做、製造', en:'to make, to do', examples:[{w:'factory',m:'工廠'},{w:'effect',m:'效果'},{w:'fiction',m:'小說'},{w:'modify',m:'修改'}] },
+  { id:'oper', type:'root', form:'oper', cat:'動作', zh:'工作、勞動', en:'work', examples:[{w:'operate',m:'操作'},{w:'cooperate',m:'合作'}] },
+  { id:'labor', type:'root', form:'labor', cat:'動作', zh:'工作、勞動', en:'work', examples:[{w:'labor',m:'勞動'},{w:'laboratory',m:'實驗室'},{w:'elaborate',m:'詳盡的'}] },
+  { id:'mit', type:'root', form:'mit/miss', cat:'動作', zh:'送、放', en:'to send', examples:[{w:'submit',m:'提交'},{w:'mission',m:'任務'},{w:'permit',m:'允許'}] },
+  { id:'port', type:'root', form:'port', cat:'動作', zh:'搬運、攜帶', en:'to carry', examples:[{w:'import',m:'進口'},{w:'transport',m:'運輸'},{w:'portable',m:'可攜的'}] },
+  { id:'fer', type:'root', form:'fer/lat', cat:'動作', zh:'帶、搬運', en:'to carry, to bear', examples:[{w:'transfer',m:'轉移'},{w:'refer',m:'提及'},{w:'translate',m:'翻譯'}] },
+  { id:'duc', type:'root', form:'duc/duct', cat:'動作', zh:'引導', en:'to lead', examples:[{w:'produce',m:'生產'},{w:'conduct',m:'指揮'},{w:'introduce',m:'介紹'}] },
+  { id:'tract', type:'root', form:'tract', cat:'動作', zh:'拉、拖', en:'to pull, to drag', examples:[{w:'attract',m:'吸引'},{w:'extract',m:'抽取'},{w:'contract',m:'契約'}] },
+  { id:'pel', type:'root', form:'pel/puls', cat:'動作', zh:'推、驅', en:'to push, to drive', examples:[{w:'propel',m:'推進'},{w:'expel',m:'驅逐'},{w:'impulse',m:'衝動'}] },
+  { id:'press', type:'root', form:'press', cat:'動作', zh:'壓', en:'to press', examples:[{w:'compress',m:'壓縮'},{w:'express',m:'表達'},{w:'impress',m:'印象'}] },
+  { id:'cede', type:'root', form:'cede/ceed/cess', cat:'動作', zh:'走、讓', en:'to go, to yield', examples:[{w:'proceed',m:'前進'},{w:'exceed',m:'超過'},{w:'success',m:'成功'}] },
+  { id:'grad', type:'root', form:'grad/gress', cat:'動作', zh:'走、步', en:'to step, to go', examples:[{w:'graduate',m:'畢業'},{w:'progress',m:'進步'},{w:'aggressive',m:'侵略的'}] },
+  { id:'ven', type:'root', form:'ven/vent', cat:'動作', zh:'來', en:'to come', examples:[{w:'convene',m:'召集'},{w:'prevent',m:'預防'},{w:'invent',m:'發明'}] },
+  { id:'it', type:'root', form:'it', cat:'動作', zh:'走、去', en:'to go', examples:[{w:'exit',m:'出口'},{w:'transit',m:'過境'},{w:'circuit',m:'迴路'}] },
+  { id:'ambul', type:'root', form:'ambul', cat:'動作', zh:'走', en:'to walk', examples:[{w:'ambulance',m:'救護車'},{w:'preamble',m:'序言'}] },
+  { id:'cur', type:'root', form:'cur/curs/cours', cat:'動作', zh:'跑', en:'to run', examples:[{w:'current',m:'當前的'},{w:'occur',m:'發生'},{w:'course',m:'課程'}] },
+  { id:'flu', type:'root', form:'flu/flux', cat:'動作', zh:'流', en:'to flow', examples:[{w:'fluent',m:'流暢的'},{w:'influence',m:'影響'},{w:'flux',m:'流量'}] },
+  { id:'mov', type:'root', form:'mov/mot', cat:'動作', zh:'動', en:'to move', examples:[{w:'remove',m:'移除'},{w:'motion',m:'運動'},{w:'promote',m:'提升'}] },
+  { id:'vers', type:'root', form:'vers/vert', cat:'動作', zh:'轉', en:'to turn', examples:[{w:'reverse',m:'反轉'},{w:'convert',m:'轉換'},{w:'universe',m:'宇宙'}] },
+  { id:'volv', type:'root', form:'volv/volut', cat:'動作', zh:'滾、轉', en:'to roll, to turn', examples:[{w:'involve',m:'涉及'},{w:'evolve',m:'進化'},{w:'revolution',m:'革命'}] },
+  { id:'rot', type:'root', form:'rot', cat:'動作', zh:'輪、轉', en:'wheel, to turn', examples:[{w:'rotate',m:'旋轉'},{w:'rotary',m:'旋轉的'}] },
+  { id:'cline', type:'root', form:'cline/clin', cat:'動作', zh:'傾、斜', en:'to lean', examples:[{w:'decline',m:'下降'},{w:'incline',m:'傾向'},{w:'recline',m:'斜倚'}] },
+  { id:'flect', type:'root', form:'flect/flex', cat:'動作', zh:'彎曲', en:'to bend', examples:[{w:'reflect',m:'反映'},{w:'flexible',m:'有彈性的'}] },
+  { id:'tort', type:'root', form:'tort/tors', cat:'動作', zh:'扭', en:'to twist', examples:[{w:'distort',m:'扭曲'},{w:'torture',m:'折磨'}] },
+  { id:'frag', type:'root', form:'frag/fract', cat:'動作', zh:'破、碎', en:'to break', examples:[{w:'fragment',m:'碎片'},{w:'fracture',m:'骨折'},{w:'fragile',m:'易碎的'}] },
+  { id:'rupt', type:'root', form:'rupt', cat:'動作', zh:'破、裂', en:'to break', examples:[{w:'erupt',m:'爆發'},{w:'interrupt',m:'打斷'},{w:'bankrupt',m:'破產'}] },
+  { id:'sect', type:'root', form:'sect/seg', cat:'動作', zh:'切', en:'to cut', examples:[{w:'section',m:'部分'},{w:'insect',m:'昆蟲'},{w:'segment',m:'片段'}] },
+  { id:'cid', type:'root', form:'cid/cis', cat:'動作', zh:'切、殺', en:'to cut, to kill', examples:[{w:'decide',m:'決定'},{w:'suicide',m:'自殺'},{w:'precise',m:'精確的'}] },
+  { id:'scrib', type:'root', form:'scrib/script', cat:'動作', zh:'寫', en:'to write', examples:[{w:'describe',m:'描述'},{w:'script',m:'劇本'},{w:'prescribe',m:'開藥方'}] },
+  { id:'graph', type:'root', form:'graph/gram', cat:'動作', zh:'寫、畫', en:'to write, to draw', examples:[{w:'photograph',m:'照片'},{w:'diagram',m:'圖表'},{w:'autograph',m:'親筆簽名'}] },
+  { id:'dict', type:'root', form:'dict', cat:'動作', zh:'說', en:'to say', examples:[{w:'predict',m:'預測'},{w:'dictator',m:'獨裁者'},{w:'contradict',m:'反駁'}] },
+  { id:'loqu', type:'root', form:'loqu/locut', cat:'動作', zh:'說', en:'to speak', examples:[{w:'eloquent',m:'雄辯的'},{w:'soliloquy',m:'獨白'}] },
+  { id:'voc', type:'root', form:'voc/vok', cat:'動作', zh:'叫、聲音', en:'to call, voice', examples:[{w:'vocal',m:'聲音的'},{w:'invoke',m:'援引'},{w:'advocate',m:'提倡'}] },
+  { id:'nunci', type:'root', form:'nunci/nounc', cat:'動作', zh:'宣告', en:'to announce', examples:[{w:'announce',m:'宣布'},{w:'pronounce',m:'發音'},{w:'renounce',m:'放棄'}] },
+  { id:'lect', type:'root', form:'lect/leg', cat:'動作', zh:'讀、選、聚', en:'to read, to choose', examples:[{w:'collect',m:'收集'},{w:'select',m:'選擇'},{w:'lecture',m:'演講'}] },
+  { id:'cogn', type:'root', form:'cogn/gnos', cat:'動作', zh:'知道', en:'to know', examples:[{w:'recognize',m:'辨識'},{w:'diagnose',m:'診斷'},{w:'cognitive',m:'認知的'}] },
+  { id:'sci', type:'root', form:'sci', cat:'動作', zh:'知道', en:'to know', examples:[{w:'science',m:'科學'},{w:'conscious',m:'有意識的'}] },
+  { id:'mem', type:'root', form:'mem', cat:'動作', zh:'記憶', en:'memory, mindful', examples:[{w:'memory',m:'記憶'},{w:'remember',m:'記得'},{w:'commemorate',m:'紀念'}] },
+  { id:'ment_mind', type:'root', form:'ment', cat:'動作', zh:'心智', en:'mind', examples:[{w:'mental',m:'心理的'},{w:'mention',m:'提及'},{w:'comment',m:'評論'}] },
+  { id:'psych', type:'root', form:'psych', cat:'動作', zh:'心靈、精神', en:'mind, soul', examples:[{w:'psychology',m:'心理學'},{w:'psychiatry',m:'精神病學'}] },
+  { id:'anim', type:'root', form:'anim', cat:'動作', zh:'生命、精神', en:'life, spirit', examples:[{w:'animal',m:'動物'},{w:'animate',m:'使有生氣'},{w:'unanimous',m:'全體一致的'}] },
+  { id:'vit', type:'root', form:'vit/viv', cat:'動作', zh:'生命', en:'life', examples:[{w:'vital',m:'重要的'},{w:'survive',m:'生存'},{w:'vivid',m:'生動的'}] },
+  { id:'bio', type:'root', form:'bio', cat:'動作', zh:'生命', en:'life', examples:[{w:'biology',m:'生物學'},{w:'antibiotic',m:'抗生素'}] },
+  { id:'mort', type:'root', form:'mort', cat:'動作', zh:'死', en:'death', examples:[{w:'mortal',m:'凡人的'},{w:'immortal',m:'不朽的'},{w:'mortgage',m:'抵押'}] },
+  { id:'necro', type:'root', form:'necro', cat:'動作', zh:'死', en:'dead', examples:[{w:'necrosis',m:'壞死'}] },
+  { id:'gen', type:'root', form:'gen', cat:'動作', zh:'生、種', en:'to produce, race', examples:[{w:'generate',m:'產生'},{w:'genetic',m:'遺傳的'},{w:'genesis',m:'起源'}] },
+  { id:'nat', type:'root', form:'nat', cat:'動作', zh:'出生', en:'to be born', examples:[{w:'native',m:'本地的'},{w:'nation',m:'國家'},{w:'nature',m:'自然'}] },
+  { id:'cre', type:'root', form:'cre/creas/cret', cat:'動作', zh:'生長、增加', en:'to grow, to create', examples:[{w:'create',m:'創造'},{w:'increase',m:'增加'},{w:'concrete',m:'具體的'}] },
+  { id:'nutri', type:'root', form:'nutri/nour', cat:'動作', zh:'養', en:'to nourish', examples:[{w:'nutrition',m:'營養'},{w:'nourish',m:'滋養'}] },
+  { id:'hab', type:'root', form:'hab/hib', cat:'動作', zh:'持有、住', en:'to have, to hold', examples:[{w:'habit',m:'習慣'},{w:'inhabit',m:'居住'},{w:'prohibit',m:'禁止'}] },
+  { id:'ten', type:'root', form:'ten/tain/tin', cat:'動作', zh:'持、拿', en:'to hold', examples:[{w:'contain',m:'包含'},{w:'retain',m:'保留'},{w:'continue',m:'繼續'}] },
+  { id:'cap', type:'root', form:'cap/cept/ceive', cat:'動作', zh:'拿、取', en:'to take, to seize', examples:[{w:'capture',m:'捕獲'},{w:'accept',m:'接受'},{w:'receive',m:'接收'}] },
+  { id:'pon', type:'root', form:'pon/pos/pound', cat:'動作', zh:'放、擺', en:'to put, to place', examples:[{w:'compose',m:'組成'},{w:'propose',m:'提議'},{w:'compound',m:'化合物'}] },
+  { id:'sta', type:'root', form:'sta/stan/stat/stit', cat:'動作', zh:'站立', en:'to stand', examples:[{w:'stand',m:'站立'},{w:'static',m:'靜態的'},{w:'constitute',m:'構成'}] },
+  { id:'sid', type:'root', form:'sid/sed/sess', cat:'動作', zh:'坐', en:'to sit', examples:[{w:'reside',m:'居住'},{w:'sediment',m:'沉積物'},{w:'session',m:'會議'}] },
+  { id:'jac', type:'root', form:'jac/ject', cat:'動作', zh:'丟、擲', en:'to throw', examples:[{w:'reject',m:'拒絕'},{w:'project',m:'專案'},{w:'inject',m:'注射'}] },
+  { id:'sol_solv', type:'root', form:'solv/solut', cat:'動作', zh:'鬆開、解決', en:'to loosen, to solve', examples:[{w:'solve',m:'解決'},{w:'dissolve',m:'溶解'},{w:'solution',m:'解答'}] },
+  { id:'serv', type:'root', form:'serv', cat:'動作', zh:'服務、保持', en:'to serve, to keep', examples:[{w:'serve',m:'服務'},{w:'preserve',m:'保存'},{w:'reserve',m:'預約'}] },
+  { id:'vid', type:'root', form:'vid/vis', cat:'感官', zh:'看', en:'to see', examples:[{w:'video',m:'影片'},{w:'visible',m:'可見的'},{w:'evident',m:'明顯的'}] },
+  { id:'spec', type:'root', form:'spec/spect', cat:'感官', zh:'看', en:'to look', examples:[{w:'inspect',m:'檢查'},{w:'spectator',m:'觀眾'},{w:'aspect',m:'方面'}] },
+  { id:'scop', type:'root', form:'scop', cat:'感官', zh:'看', en:'to see, to examine', examples:[{w:'telescope',m:'望遠鏡'},{w:'microscope',m:'顯微鏡'}] },
+  { id:'aud', type:'root', form:'aud/audi', cat:'感官', zh:'聽', en:'to hear', examples:[{w:'audio',m:'音頻'},{w:'audience',m:'聽眾'},{w:'audit',m:'審計'}] },
+  { id:'phon', type:'root', form:'phon/phone', cat:'感官', zh:'聲音', en:'sound', examples:[{w:'telephone',m:'電話'},{w:'symphony',m:'交響樂'},{w:'phonetic',m:'語音的'}] },
+  { id:'son', type:'root', form:'son', cat:'感官', zh:'聲音', en:'sound', examples:[{w:'sonic',m:'音波的'},{w:'resonate',m:'共鳴'},{w:'unison',m:'一致'}] },
+  { id:'sens', type:'root', form:'sens/sent', cat:'感官', zh:'感覺', en:'to feel, to sense', examples:[{w:'sense',m:'感覺'},{w:'sentiment',m:'情感'},{w:'consent',m:'同意'}] },
+  { id:'tact', type:'root', form:'tact/tang/ting', cat:'感官', zh:'觸摸', en:'to touch', examples:[{w:'contact',m:'接觸'},{w:'tangible',m:'有形的'},{w:'tactile',m:'觸覺的'}] },
+  { id:'od', type:'root', form:'od/odor', cat:'感官', zh:'氣味', en:'smell', examples:[{w:'odor',m:'氣味'},{w:'deodorant',m:'除臭劑'}] },
+
+  // ============ ROOTS (身體) ============
+  { id:'capit', type:'root', form:'capit/cap', cat:'身體', zh:'頭、主要', en:'head', examples:[{w:'capital',m:'首都'},{w:'captain',m:'船長'},{w:'chapter',m:'章節'}] },
+  { id:'cephal', type:'root', form:'cephal', cat:'身體', zh:'頭', en:'head', examples:[{w:'encephalitis',m:'腦炎'}] },
+  { id:'cord', type:'root', form:'cord/cour', cat:'身體', zh:'心', en:'heart', examples:[{w:'cordial',m:'誠摯的'},{w:'courage',m:'勇氣'},{w:'record',m:'記錄'}] },
+  { id:'cardi', type:'root', form:'cardi', cat:'身體', zh:'心臟', en:'heart', examples:[{w:'cardiac',m:'心臟的'},{w:'cardiology',m:'心臟學'}] },
+  { id:'corp', type:'root', form:'corp', cat:'身體', zh:'身體', en:'body', examples:[{w:'corps',m:'軍團'},{w:'corpse',m:'屍體'},{w:'corporation',m:'公司'}] },
+  { id:'dent', type:'root', form:'dent/dont', cat:'身體', zh:'牙齒', en:'tooth', examples:[{w:'dentist',m:'牙醫'},{w:'orthodontist',m:'矯正牙醫'}] },
+  { id:'derm', type:'root', form:'derm', cat:'身體', zh:'皮膚', en:'skin', examples:[{w:'dermatology',m:'皮膚科'},{w:'epidermis',m:'表皮'}] },
+  { id:'gastr', type:'root', form:'gastr', cat:'身體', zh:'胃', en:'stomach', examples:[{w:'gastric',m:'胃的'},{w:'gastronomy',m:'美食學'}] },
+  { id:'hem', type:'root', form:'hem/hema/hemo', cat:'身體', zh:'血', en:'blood', examples:[{w:'hemoglobin',m:'血紅蛋白'},{w:'hemorrhage',m:'出血'}] },
+  { id:'man', type:'root', form:'man/manu', cat:'身體', zh:'手', en:'hand', examples:[{w:'manual',m:'手冊'},{w:'manufacture',m:'製造'},{w:'manipulate',m:'操縱'}] },
+  { id:'ped', type:'root', form:'ped/pod', cat:'身體', zh:'腳', en:'foot', examples:[{w:'pedal',m:'踏板'},{w:'pedestrian',m:'行人'},{w:'tripod',m:'三腳架'}] },
+  { id:'os', type:'root', form:'os/oss/ost', cat:'身體', zh:'骨', en:'bone', examples:[{w:'ossify',m:'硬化'},{w:'osteoporosis',m:'骨質疏鬆'}] },
+  { id:'neur', type:'root', form:'neur', cat:'身體', zh:'神經', en:'nerve', examples:[{w:'neuron',m:'神經元'},{w:'neurology',m:'神經學'}] },
+  { id:'ocul', type:'root', form:'ocul/opt', cat:'身體', zh:'眼睛', en:'eye', examples:[{w:'binoculars',m:'雙筒望遠鏡'},{w:'optical',m:'光學的'},{w:'optometry',m:'驗光'}] },
+  { id:'or', type:'root', form:'or/oro', cat:'身體', zh:'嘴', en:'mouth', examples:[{w:'oral',m:'口頭的'},{w:'orator',m:'演說家'}] },
+  { id:'lingu', type:'root', form:'lingu/langu', cat:'身體', zh:'舌頭、語言', en:'tongue, language', examples:[{w:'language',m:'語言'},{w:'linguistics',m:'語言學'},{w:'bilingual',m:'雙語的'}] },
+  { id:'corp_b', type:'root', form:'carn/carnal', cat:'身體', zh:'肉', en:'flesh', examples:[{w:'carnivore',m:'肉食動物'},{w:'carnival',m:'嘉年華'}] },
+
+  // ============ ROOTS (自然) ============
+  { id:'aqua', type:'root', form:'aqua/aqu', cat:'自然', zh:'水', en:'water', examples:[{w:'aquarium',m:'水族館'},{w:'aquatic',m:'水生的'}] },
+  { id:'hydr', type:'root', form:'hydr', cat:'自然', zh:'水', en:'water', examples:[{w:'hydrogen',m:'氫'},{w:'hydrate',m:'補水'},{w:'dehydrate',m:'脫水'}] },
+  { id:'mar', type:'root', form:'mar/marin', cat:'自然', zh:'海', en:'sea', examples:[{w:'marine',m:'海洋的'},{w:'submarine',m:'潛艇'}] },
+  { id:'naut', type:'root', form:'naut/nav/nau', cat:'自然', zh:'船、航', en:'ship, to sail', examples:[{w:'astronaut',m:'太空人'},{w:'navy',m:'海軍'},{w:'nautical',m:'航海的'}] },
+  { id:'terr', type:'root', form:'terr/ter', cat:'自然', zh:'土地', en:'earth, land', examples:[{w:'territory',m:'領土'},{w:'terrain',m:'地形'},{w:'terrestrial',m:'陸地的'}] },
+  { id:'geo', type:'root', form:'geo', cat:'自然', zh:'地、地球', en:'earth', examples:[{w:'geography',m:'地理學'},{w:'geology',m:'地質學'}] },
+  { id:'astr', type:'root', form:'astr/aster', cat:'自然', zh:'星星', en:'star', examples:[{w:'astronomy',m:'天文學'},{w:'asterisk',m:'星號'},{w:'disaster',m:'災難'}] },
+  { id:'sol', type:'root', form:'sol', cat:'自然', zh:'太陽', en:'sun', examples:[{w:'solar',m:'太陽的'},{w:'parasol',m:'陽傘'}] },
+  { id:'luc', type:'root', form:'luc/lum/lustr', cat:'自然', zh:'光', en:'light', examples:[{w:'lucid',m:'清晰的'},{w:'illuminate',m:'照亮'},{w:'illustrate',m:'說明'}] },
+  { id:'lun', type:'root', form:'lun', cat:'自然', zh:'月', en:'moon', examples:[{w:'lunar',m:'月亮的'},{w:'lunatic',m:'瘋狂的'}] },
+  { id:'ign', type:'root', form:'ign', cat:'自然', zh:'火', en:'fire', examples:[{w:'ignite',m:'點燃'},{w:'ignition',m:'點火'}] },
+  { id:'pyr', type:'root', form:'pyr', cat:'自然', zh:'火', en:'fire', examples:[{w:'pyromaniac',m:'縱火狂'},{w:'pyre',m:'火葬柴堆'}] },
+  { id:'therm', type:'root', form:'therm', cat:'自然', zh:'熱', en:'heat', examples:[{w:'thermal',m:'熱的'},{w:'thermometer',m:'溫度計'}] },
+  { id:'ventus', type:'root', form:'vent', cat:'自然', zh:'風', en:'wind', examples:[{w:'ventilate',m:'通風'},{w:'vent',m:'通風口'}] },
+  { id:'flor', type:'root', form:'flor/flour', cat:'自然', zh:'花、繁盛', en:'flower, to flourish', examples:[{w:'flora',m:'植物群'},{w:'florist',m:'花商'},{w:'flourish',m:'繁盛'}] },
+  { id:'herb', type:'root', form:'herb', cat:'自然', zh:'草', en:'grass, herb', examples:[{w:'herbivore',m:'草食動物'},{w:'herbal',m:'草本的'}] },
+  { id:'silv', type:'root', form:'silv', cat:'自然', zh:'森林', en:'forest, woods', examples:[{w:'silvan',m:'森林的'}] },
+
+  // ============ ROOTS (測量) ============
+  { id:'metr', type:'root', form:'metr/meter', cat:'測量', zh:'量、測量', en:'to measure', examples:[{w:'thermometer',m:'溫度計'},{w:'symmetry',m:'對稱'},{w:'geometry',m:'幾何'}] },
+  { id:'numer', type:'root', form:'numer', cat:'測量', zh:'數字', en:'number', examples:[{w:'numerous',m:'許多的'},{w:'numeral',m:'數字'}] },
+  { id:'pend', type:'root', form:'pend/pens', cat:'測量', zh:'懸掛、秤、花費', en:'to hang, to weigh', examples:[{w:'depend',m:'依賴'},{w:'suspend',m:'暫停'},{w:'expensive',m:'昂貴的'}] },
+  { id:'pond', type:'root', form:'pond/ponder', cat:'測量', zh:'重量、思量', en:'weight, to consider', examples:[{w:'ponder',m:'思考'},{w:'preponderance',m:'優勢'}] },
+  { id:'grav', type:'root', form:'grav', cat:'測量', zh:'重', en:'heavy', examples:[{w:'gravity',m:'重力'},{w:'aggravate',m:'加重'}] },
+
+  // ============ ROOTS (思想、情感) ============
+  { id:'phil', type:'root', form:'phil', cat:'思想情感', zh:'愛', en:'to love', examples:[{w:'philosophy',m:'哲學'},{w:'philanthropy',m:'慈善'}] },
+  { id:'am', type:'root', form:'am/amor', cat:'思想情感', zh:'愛', en:'love', examples:[{w:'amateur',m:'業餘者'},{w:'enamored',m:'傾心的'},{w:'amiable',m:'和藹的'}] },
+  { id:'miso', type:'root', form:'mis/miso', cat:'思想情感', zh:'恨', en:'hatred', examples:[{w:'misanthrope',m:'厭世者'},{w:'misogyny',m:'厭女'}] },
+  { id:'path', type:'root', form:'path/pati', cat:'思想情感', zh:'感受、受苦', en:'feeling, suffering', examples:[{w:'sympathy',m:'同情'},{w:'pathetic',m:'可憐的'},{w:'patient',m:'病人'}] },
+  { id:'fid', type:'root', form:'fid', cat:'思想情感', zh:'信、忠', en:'faith, trust', examples:[{w:'confide',m:'傾訴'},{w:'fidelity',m:'忠誠'},{w:'infidel',m:'異教徒'}] },
+  { id:'cred', type:'root', form:'cred', cat:'思想情感', zh:'相信', en:'to believe', examples:[{w:'credit',m:'信用'},{w:'incredible',m:'難以置信的'},{w:'credential',m:'證書'}] },
+  { id:'doc', type:'root', form:'doc/doct', cat:'思想情感', zh:'教', en:'to teach', examples:[{w:'doctor',m:'博士'},{w:'document',m:'文件'},{w:'docile',m:'馴服的'}] },
+  { id:'dogma', type:'root', form:'dogma', cat:'思想情感', zh:'教義', en:'teaching, opinion', examples:[{w:'dogma',m:'教條'},{w:'dogmatic',m:'教條的'}] },
+  { id:'the', type:'root', form:'the/theo', cat:'思想情感', zh:'神', en:'god', examples:[{w:'theology',m:'神學'},{w:'atheist',m:'無神論者'},{w:'monotheism',m:'一神論'}] },
+  { id:'sacr', type:'root', form:'sacr/sanct', cat:'思想情感', zh:'神聖', en:'sacred, holy', examples:[{w:'sacred',m:'神聖的'},{w:'sanctuary',m:'聖殿'},{w:'sanction',m:'批准'}] },
+
+  // ============ ROOTS (社會、政治) ============
+  { id:'reg', type:'root', form:'reg/rect', cat:'社會政治', zh:'規則、統治、直', en:'to rule, right, straight', examples:[{w:'regulate',m:'規範'},{w:'correct',m:'正確的'},{w:'direct',m:'直接的'}] },
+  { id:'dem', type:'root', form:'dem', cat:'社會政治', zh:'人民', en:'people', examples:[{w:'democracy',m:'民主'},{w:'demographic',m:'人口統計的'},{w:'epidemic',m:'流行病'}] },
+  { id:'civ', type:'root', form:'civ/civil', cat:'社會政治', zh:'公民', en:'citizen', examples:[{w:'civil',m:'公民的'},{w:'civilization',m:'文明'}] },
+  { id:'polit', type:'root', form:'polit/polis', cat:'社會政治', zh:'城市、公民', en:'city, citizen', examples:[{w:'politics',m:'政治'},{w:'metropolis',m:'大都市'}] },
+  { id:'jur', type:'root', form:'jur/jus/jud', cat:'社會政治', zh:'法律、公正', en:'law, right', examples:[{w:'justice',m:'正義'},{w:'judge',m:'法官'},{w:'jury',m:'陪審團'}] },
+  { id:'nomos', type:'root', form:'nomy/nom', cat:'社會政治', zh:'法則、學科', en:'law, order, science of', examples:[{w:'astronomy',m:'天文學'},{w:'economy',m:'經濟'},{w:'autonomy',m:'自治'}] },
+  { id:'leg', type:'root', form:'leg/legis', cat:'社會政治', zh:'法律', en:'law', examples:[{w:'legal',m:'合法的'},{w:'legislate',m:'立法'}] },
+  { id:'pater', type:'root', form:'pater/patr', cat:'社會政治', zh:'父親、祖國', en:'father', examples:[{w:'paternal',m:'父親的'},{w:'patriotic',m:'愛國的'},{w:'patron',m:'贊助人'}] },
+  { id:'mater', type:'root', form:'mater/matr', cat:'社會政治', zh:'母親', en:'mother', examples:[{w:'maternal',m:'母親的'},{w:'maternity',m:'母性'},{w:'matrix',m:'矩陣'}] },
+  { id:'frater', type:'root', form:'frater/fratr', cat:'社會政治', zh:'兄弟', en:'brother', examples:[{w:'fraternal',m:'兄弟的'},{w:'fraternity',m:'兄弟會'}] },
+
+  // ============ ROOTS (性質、程度) ============
+  { id:'magn', type:'root', form:'magn/maxim', cat:'性質程度', zh:'大、偉大', en:'great, large', examples:[{w:'magnificent',m:'壯麗的'},{w:'magnify',m:'放大'},{w:'maximum',m:'最大'}] },
+  { id:'minim', type:'root', form:'min/minim', cat:'性質程度', zh:'小、少', en:'small, less', examples:[{w:'minimum',m:'最小'},{w:'minor',m:'次要的'},{w:'diminish',m:'減少'}] },
+  { id:'plen', type:'root', form:'plen/plet', cat:'性質程度', zh:'滿', en:'full', examples:[{w:'plenty',m:'充足'},{w:'complete',m:'完整的'},{w:'supplement',m:'補充'}] },
+  { id:'vac', type:'root', form:'vac/van', cat:'性質程度', zh:'空', en:'empty', examples:[{w:'vacuum',m:'真空'},{w:'vacant',m:'空的'},{w:'vanish',m:'消失'}] },
+  { id:'integ', type:'root', form:'integ/tang', cat:'性質程度', zh:'完整、觸碰', en:'whole, untouched', examples:[{w:'integrity',m:'正直'},{w:'integer',m:'整數'}] },
+  { id:'nov', type:'root', form:'nov', cat:'性質程度', zh:'新', en:'new', examples:[{w:'novel',m:'新穎的；小說'},{w:'innovate',m:'創新'},{w:'renovate',m:'翻新'}] },
+  { id:'sen', type:'root', form:'sen', cat:'性質程度', zh:'老', en:'old', examples:[{w:'senior',m:'年長的'},{w:'senile',m:'衰老的'},{w:'senate',m:'參議院'}] },
+  { id:'juven', type:'root', form:'juven/junior', cat:'性質程度', zh:'年輕', en:'young', examples:[{w:'juvenile',m:'少年的'},{w:'rejuvenate',m:'使年輕'}] },
+  { id:'chron', type:'root', form:'chron', cat:'性質程度', zh:'時間', en:'time', examples:[{w:'chronic',m:'慢性的'},{w:'synchronize',m:'同步'},{w:'chronology',m:'年表'}] },
+  { id:'tempor', type:'root', form:'tempor', cat:'性質程度', zh:'時間', en:'time', examples:[{w:'temporary',m:'暫時的'},{w:'contemporary',m:'同期的'}] },
+  { id:'solus', type:'root', form:'sol/soli', cat:'性質程度', zh:'單獨', en:'alone', examples:[{w:'solo',m:'獨奏'},{w:'solitary',m:'孤獨的'},{w:'desolate',m:'荒涼的'}] },
+  { id:'vac_van', type:'root', form:'van/vacu', cat:'性質程度', zh:'空、虛', en:'empty, vain', examples:[{w:'vain',m:'徒勞的'},{w:'evacuate',m:'撤離'}] },
+  { id:'aest', type:'root', form:'aesth/esth', cat:'性質程度', zh:'感覺、審美', en:'feeling, beauty', examples:[{w:'aesthetic',m:'美學的'},{w:'anesthesia',m:'麻醉'}] },
+  { id:'strict', type:'root', form:'strict/string', cat:'性質程度', zh:'拉緊、束縛', en:'to draw tight', examples:[{w:'strict',m:'嚴格的'},{w:'restrict',m:'限制'},{w:'stringent',m:'嚴厲的'}] },
+
+  // ============ ROOTS (動作 - 語言) ============
+  { id:'log', type:'root', form:'log/logy', cat:'語言思考', zh:'字、學問、言', en:'word, study, speech', examples:[{w:'logic',m:'邏輯'},{w:'dialogue',m:'對話'},{w:'biology',m:'生物學'}] },
+  { id:'verb', type:'root', form:'verb', cat:'語言思考', zh:'字、話', en:'word', examples:[{w:'verbal',m:'口頭的'},{w:'proverb',m:'諺語'}] },
+  { id:'nom', type:'root', form:'nom/nomin', cat:'語言思考', zh:'名字', en:'name', examples:[{w:'nominate',m:'提名'},{w:'anonymous',m:'匿名的'},{w:'synonym',m:'同義字'}] },
+  { id:'onym', type:'root', form:'onym', cat:'語言思考', zh:'名字', en:'name', examples:[{w:'pseudonym',m:'筆名'},{w:'antonym',m:'反義字'}] },
+  { id:'lect_read', type:'root', form:'lit/liter', cat:'語言思考', zh:'字母、文字', en:'letter', examples:[{w:'literature',m:'文學'},{w:'literal',m:'字面的'},{w:'illiterate',m:'文盲的'}] },
+  { id:'libr', type:'root', form:'libr', cat:'語言思考', zh:'書', en:'book', examples:[{w:'library',m:'圖書館'}] },
+  { id:'bibl', type:'root', form:'bibl', cat:'語言思考', zh:'書', en:'book', examples:[{w:'bible',m:'聖經'},{w:'bibliography',m:'參考書目'}] },
+
+  // ============ ROOTS (運動、競爭) ============
+  { id:'jet', type:'root', form:'jac/jet', cat:'動作', zh:'投擲', en:'to throw', examples:[{w:'eject',m:'彈出'},{w:'jet',m:'噴射'}] },
+  { id:'pet', type:'root', form:'pet/peat', cat:'動作', zh:'尋求、向', en:'to seek', examples:[{w:'compete',m:'競爭'},{w:'petition',m:'請願'},{w:'appetite',m:'食慾'}] },
+  { id:'qu', type:'root', form:'quer/quir/ques/quest', cat:'動作', zh:'尋問', en:'to ask, to seek', examples:[{w:'inquire',m:'詢問'},{w:'question',m:'問題'},{w:'require',m:'需要'}] },
+  { id:'rog', type:'root', form:'rog', cat:'動作', zh:'詢問、要求', en:'to ask', examples:[{w:'arrogant',m:'傲慢的'},{w:'interrogate',m:'審問'}] },
+  { id:'batt', type:'root', form:'batt/bat', cat:'動作', zh:'打', en:'to beat', examples:[{w:'battle',m:'戰鬥'},{w:'combat',m:'戰鬥'}] },
+  { id:'bell', type:'root', form:'bell', cat:'動作', zh:'戰爭', en:'war', examples:[{w:'rebel',m:'反抗'},{w:'belligerent',m:'好戰的'}] },
+  { id:'pac', type:'root', form:'pac/peas', cat:'動作', zh:'和平', en:'peace', examples:[{w:'pacific',m:'和平的'},{w:'pacify',m:'使平靜'}] },
+
+  // ============ ROOTS (價值) ============
+  { id:'val', type:'root', form:'val', cat:'性質程度', zh:'價值、強', en:'value, strong', examples:[{w:'value',m:'價值'},{w:'valid',m:'有效的'},{w:'prevail',m:'盛行'}] },
+  { id:'digni', type:'root', form:'dign', cat:'性質程度', zh:'有價值', en:'worthy', examples:[{w:'dignity',m:'尊嚴'},{w:'indignant',m:'憤慨的'}] },
+  { id:'preci', type:'root', form:'preci/pretia', cat:'性質程度', zh:'價值', en:'price, worth', examples:[{w:'precious',m:'珍貴的'},{w:'appreciate',m:'欣賞'}] },
+
+  // ============ ROOTS (顏色) ============
+  { id:'alb', type:'root', form:'alb', cat:'顏色', zh:'白', en:'white', examples:[{w:'album',m:'相簿'},{w:'albino',m:'白化者'}] },
+  { id:'melan', type:'root', form:'melan', cat:'顏色', zh:'黑', en:'black', examples:[{w:'melancholy',m:'憂鬱'},{w:'melanin',m:'黑色素'}] },
+  { id:'rub', type:'root', form:'rub', cat:'顏色', zh:'紅', en:'red', examples:[{w:'ruby',m:'紅寶石'},{w:'rubric',m:'標題'}] },
+
+  // ============ ROOTS (形狀、方位) ============
+  { id:'form', type:'root', form:'form', cat:'形狀', zh:'形狀', en:'form, shape', examples:[{w:'form',m:'形狀'},{w:'reform',m:'改革'},{w:'uniform',m:'制服'}] },
+  { id:'morph', type:'root', form:'morph', cat:'形狀', zh:'形', en:'form, shape', examples:[{w:'metamorphosis',m:'變態'},{w:'morphology',m:'形態學'}] },
+  { id:'fig', type:'root', form:'fig', cat:'形狀', zh:'形、塑', en:'to form, to shape', examples:[{w:'figure',m:'數字、人物'},{w:'configure',m:'配置'}] },
+  { id:'centr', type:'root', form:'centr/center', cat:'形狀', zh:'中心', en:'center', examples:[{w:'central',m:'中心的'},{w:'concentric',m:'同心的'},{w:'eccentric',m:'古怪的'}] },
+  { id:'medi', type:'root', form:'medi/mid', cat:'形狀', zh:'中間', en:'middle', examples:[{w:'medium',m:'媒介'},{w:'immediate',m:'立即的'},{w:'medieval',m:'中世紀的'}] },
+
+  // ============ ROOTS (其他常用) ============
+  { id:'pur', type:'root', form:'pur', cat:'其他', zh:'純淨', en:'pure', examples:[{w:'pure',m:'純淨的'},{w:'purify',m:'淨化'}] },
+  { id:'liber', type:'root', form:'liber', cat:'其他', zh:'自由', en:'free', examples:[{w:'liberty',m:'自由'},{w:'liberal',m:'自由主義的'},{w:'deliver',m:'遞送'}] },
+  { id:'serv_save', type:'root', form:'salv/sav', cat:'其他', zh:'救', en:'to save', examples:[{w:'save',m:'拯救'},{w:'salvage',m:'搶救'}] },
+  { id:'cap_take', type:'root', form:'cap/capt', cat:'其他', zh:'取、捉', en:'to catch', examples:[{w:'capture',m:'捕獲'},{w:'capable',m:'有能力的'}] },
+  { id:'ar', type:'root', form:'ar/arm', cat:'其他', zh:'武器、裝備', en:'weapon, to fit', examples:[{w:'arms',m:'武器'},{w:'army',m:'軍隊'}] },
+  { id:'art', type:'root', form:'art', cat:'其他', zh:'技藝', en:'skill', examples:[{w:'art',m:'藝術'},{w:'artisan',m:'工匠'},{w:'artificial',m:'人造的'}] },
+  { id:'archa', type:'root', form:'arch', cat:'其他', zh:'統治、古', en:'to rule, ancient', examples:[{w:'monarch',m:'君主'},{w:'anarchy',m:'無政府'},{w:'archaic',m:'古老的'}] },
+  { id:'dom', type:'root', form:'dom', cat:'其他', zh:'家、統治', en:'house, to control', examples:[{w:'domestic',m:'家的'},{w:'dominate',m:'支配'},{w:'dominion',m:'領地'}] },
+  { id:'popul', type:'root', form:'popul/publ', cat:'其他', zh:'人民', en:'people', examples:[{w:'popular',m:'受歡迎的'},{w:'population',m:'人口'},{w:'public',m:'公共的'}] },
+  { id:'stru', type:'root', form:'stru/struct', cat:'其他', zh:'建造', en:'to build', examples:[{w:'structure',m:'結構'},{w:'construct',m:'建造'},{w:'destroy',m:'摧毀'}] },
+  { id:'fa', type:'root', form:'fa/fab/fess', cat:'其他', zh:'說', en:'to speak', examples:[{w:'fable',m:'寓言'},{w:'famous',m:'著名的'},{w:'confess',m:'承認'}] },
+  { id:'greg', type:'root', form:'greg', cat:'其他', zh:'群聚', en:'flock, group', examples:[{w:'gregarious',m:'群居的'},{w:'congregate',m:'聚集'},{w:'segregate',m:'隔離'}] },
+  { id:'tang_tact', type:'root', form:'tang/ting/tact', cat:'感官', zh:'觸', en:'to touch', examples:[{w:'tangent',m:'切線'},{w:'contagious',m:'傳染的'}] },
+  { id:'plic', type:'root', form:'plic/plex/ply', cat:'動作', zh:'折、疊', en:'to fold', examples:[{w:'complicated',m:'複雜的'},{w:'duplex',m:'雙層'},{w:'multiply',m:'相乘'}] },
+  { id:'cogn_gnit', type:'root', form:'gnit/gnos', cat:'動作', zh:'知道', en:'to know', examples:[{w:'ignorant',m:'無知的'},{w:'recognize',m:'認出'}] },
+  { id:'sequ', type:'root', form:'sequ/secut', cat:'動作', zh:'跟隨', en:'to follow', examples:[{w:'sequence',m:'順序'},{w:'consequence',m:'後果'},{w:'pursue',m:'追求'}] },
+  { id:'leg_read', type:'root', form:'lect/leg', cat:'動作', zh:'讀', en:'to read', examples:[{w:'legible',m:'易讀的'},{w:'legend',m:'傳說'}] },
+  { id:'clud', type:'root', form:'clud/clus', cat:'動作', zh:'關、閉', en:'to close', examples:[{w:'include',m:'包含'},{w:'exclude',m:'排除'},{w:'conclusion',m:'結論'}] },
+  { id:'fin', type:'root', form:'fin', cat:'性質程度', zh:'結束、界線', en:'end, limit', examples:[{w:'final',m:'最終的'},{w:'define',m:'定義'},{w:'infinite',m:'無限的'}] },
+  { id:'term', type:'root', form:'term/termin', cat:'性質程度', zh:'邊界、限', en:'boundary, limit', examples:[{w:'terminate',m:'終止'},{w:'determine',m:'決定'}] },
+  { id:'migr', type:'root', form:'migr', cat:'動作', zh:'遷', en:'to move, to change', examples:[{w:'migrate',m:'遷徙'},{w:'emigrate',m:'移出'},{w:'immigrant',m:'移民'}] },
+  { id:'nav', type:'root', form:'nav', cat:'動作', zh:'船', en:'ship', examples:[{w:'navigate',m:'導航'},{w:'navy',m:'海軍'}] },
+  { id:'circ', type:'root', form:'circ', cat:'形狀', zh:'圓', en:'ring', examples:[{w:'circle',m:'圓'},{w:'circuit',m:'電路'}] },
+  { id:'cand', type:'root', form:'cand/cend', cat:'自然', zh:'發光、白', en:'to shine, white', examples:[{w:'candle',m:'蠟燭'},{w:'candid',m:'坦白的'},{w:'incandescent',m:'白熾的'}] },
+  { id:'flagr', type:'root', form:'flagr/flam', cat:'自然', zh:'火、燃', en:'to burn', examples:[{w:'flame',m:'火焰'},{w:'inflammable',m:'易燃的'},{w:'flagrant',m:'惡名昭彰的'}] },
+  { id:'put', type:'root', form:'put', cat:'動作', zh:'想、計算', en:'to think, to reckon', examples:[{w:'compute',m:'計算'},{w:'reputation',m:'名聲'},{w:'dispute',m:'爭論'}] },
+  { id:'opt', type:'root', form:'opt', cat:'動作', zh:'選擇、希望', en:'to choose, to wish', examples:[{w:'option',m:'選項'},{w:'optimum',m:'最佳的'},{w:'adopt',m:'採用'}] },
+  { id:'test', type:'root', form:'test', cat:'動作', zh:'作證、測', en:'to witness, test', examples:[{w:'testify',m:'作證'},{w:'contest',m:'比賽'},{w:'protest',m:'抗議'}] },
+  { id:'vol', type:'root', form:'vol', cat:'動作', zh:'意願', en:'to wish, will', examples:[{w:'volunteer',m:'志工'},{w:'voluntary',m:'自願的'},{w:'malevolent',m:'惡意的'}] },
+  { id:'fus', type:'root', form:'fus/fund/found', cat:'動作', zh:'傾倒、熔', en:'to pour, to melt', examples:[{w:'confuse',m:'困惑'},{w:'refund',m:'退款'},{w:'profound',m:'深刻的'}] },
+  { id:'fund', type:'root', form:'fund', cat:'動作', zh:'基礎', en:'bottom, base', examples:[{w:'fundamental',m:'基本的'},{w:'foundation',m:'基礎'}] },
+  { id:'fract_break', type:'root', form:'fract/frag', cat:'動作', zh:'破', en:'to break', examples:[{w:'fraction',m:'分數'},{w:'fragile',m:'脆弱的'}] },
+  { id:'ang', type:'root', form:'ang', cat:'形狀', zh:'角', en:'angle', examples:[{w:'angle',m:'角'},{w:'triangle',m:'三角形'}] },
+
+  // ============ SUFFIXES 字尾 (名詞) ============
+  { id:'s_tion', type:'suffix', form:'-tion/-sion/-ation', cat:'名詞', zh:'動作、狀態（抽象名詞）', en:'action, state (abstract noun)', examples:[{w:'nation',m:'國家'},{w:'decision',m:'決定'},{w:'creation',m:'創造'}] },
+  { id:'s_ment', type:'suffix', form:'-ment', cat:'名詞', zh:'動作、結果', en:'action, result', examples:[{w:'movement',m:'運動'},{w:'judgment',m:'判斷'},{w:'development',m:'發展'}] },
+  { id:'s_ness', type:'suffix', form:'-ness', cat:'名詞', zh:'狀態、性質', en:'state, quality', examples:[{w:'happiness',m:'快樂'},{w:'kindness',m:'善良'},{w:'darkness',m:'黑暗'}] },
+  { id:'s_ity', type:'suffix', form:'-ity/-ty', cat:'名詞', zh:'狀態、性質', en:'state, quality', examples:[{w:'ability',m:'能力'},{w:'reality',m:'現實'},{w:'honesty',m:'誠實'}] },
+  { id:'s_er', type:'suffix', form:'-er/-or/-ar', cat:'名詞', zh:'人、做…的人/物', en:'one who, agent', examples:[{w:'teacher',m:'老師'},{w:'actor',m:'演員'},{w:'beggar',m:'乞丐'}] },
+  { id:'s_ist', type:'suffix', form:'-ist', cat:'名詞', zh:'…者、…主義者', en:'one who practices', examples:[{w:'artist',m:'藝術家'},{w:'scientist',m:'科學家'},{w:'pianist',m:'鋼琴家'}] },
+  { id:'s_ian', type:'suffix', form:'-ian/-an', cat:'名詞', zh:'…人、…家', en:'one who, belonging to', examples:[{w:'musician',m:'音樂家'},{w:'American',m:'美國人'}] },
+  { id:'s_ee', type:'suffix', form:'-ee', cat:'名詞', zh:'被動作的人', en:'one who receives', examples:[{w:'employee',m:'員工'},{w:'trainee',m:'受訓者'}] },
+  { id:'s_eer', type:'suffix', form:'-eer', cat:'名詞', zh:'從事…的人', en:'one concerned with', examples:[{w:'engineer',m:'工程師'},{w:'volunteer',m:'志工'}] },
+  { id:'s_ism', type:'suffix', form:'-ism', cat:'名詞', zh:'主義、制度', en:'doctrine, system', examples:[{w:'capitalism',m:'資本主義'},{w:'realism',m:'現實主義'}] },
+  { id:'s_ship', type:'suffix', form:'-ship', cat:'名詞', zh:'狀態、身份、技能', en:'state, condition, skill', examples:[{w:'friendship',m:'友誼'},{w:'leadership',m:'領導力'}] },
+  { id:'s_hood', type:'suffix', form:'-hood', cat:'名詞', zh:'狀態、時期', en:'state, condition', examples:[{w:'childhood',m:'童年'},{w:'neighborhood',m:'鄰里'}] },
+  { id:'s_dom', type:'suffix', form:'-dom', cat:'名詞', zh:'狀態、領域', en:'state, realm', examples:[{w:'freedom',m:'自由'},{w:'kingdom',m:'王國'},{w:'boredom',m:'無聊'}] },
+  { id:'s_ance', type:'suffix', form:'-ance/-ence', cat:'名詞', zh:'狀態、行為', en:'action, state', examples:[{w:'importance',m:'重要性'},{w:'difference',m:'差異'}] },
+  { id:'s_ure', type:'suffix', form:'-ure', cat:'名詞', zh:'行為、結果', en:'act, result', examples:[{w:'failure',m:'失敗'},{w:'pleasure',m:'樂趣'}] },
+  { id:'s_al_n', type:'suffix', form:'-al', cat:'名詞', zh:'行為（名詞）', en:'act of (noun)', examples:[{w:'arrival',m:'到達'},{w:'denial',m:'否認'},{w:'removal',m:'移除'}] },
+  { id:'s_cracy', type:'suffix', form:'-cracy/-crat', cat:'名詞', zh:'統治、…制', en:'rule, government', examples:[{w:'democracy',m:'民主'},{w:'bureaucrat',m:'官僚'}] },
+  { id:'s_ology', type:'suffix', form:'-ology', cat:'名詞', zh:'…學', en:'study of', examples:[{w:'biology',m:'生物學'},{w:'psychology',m:'心理學'}] },
+  { id:'s_itis', type:'suffix', form:'-itis', cat:'名詞', zh:'發炎', en:'inflammation', examples:[{w:'arthritis',m:'關節炎'},{w:'bronchitis',m:'支氣管炎'}] },
+  { id:'s_let', type:'suffix', form:'-let/-ling', cat:'名詞', zh:'小（指小詞）', en:'small, diminutive', examples:[{w:'booklet',m:'小冊子'},{w:'duckling',m:'小鴨'}] },
+  { id:'s_age', type:'suffix', form:'-age', cat:'名詞', zh:'狀態、集合', en:'state, collection', examples:[{w:'marriage',m:'婚姻'},{w:'package',m:'包裹'}] },
+  { id:'s_ery', type:'suffix', form:'-ery/-ry', cat:'名詞', zh:'場所、行為、群體', en:'place, activity, group', examples:[{w:'bakery',m:'麵包店'},{w:'jewelry',m:'珠寶'},{w:'bravery',m:'勇敢'}] },
+
+  // ============ SUFFIXES (形容詞) ============
+  { id:'s_able', type:'suffix', form:'-able/-ible', cat:'形容詞', zh:'能…的、可…的', en:'able to be, capable', examples:[{w:'readable',m:'可讀的'},{w:'visible',m:'可見的'},{w:'flexible',m:'有彈性的'}] },
+  { id:'s_al', type:'suffix', form:'-al', cat:'形容詞', zh:'有…性質的', en:'relating to', examples:[{w:'national',m:'國家的'},{w:'cultural',m:'文化的'}] },
+  { id:'s_ial', type:'suffix', form:'-ial/-ical', cat:'形容詞', zh:'…的', en:'of, relating to', examples:[{w:'logical',m:'合乎邏輯的'},{w:'social',m:'社會的'}] },
+  { id:'s_ous', type:'suffix', form:'-ous/-ious', cat:'形容詞', zh:'有…性質的、充滿…的', en:'full of', examples:[{w:'famous',m:'著名的'},{w:'curious',m:'好奇的'},{w:'dangerous',m:'危險的'}] },
+  { id:'s_ful', type:'suffix', form:'-ful', cat:'形容詞', zh:'充滿…的', en:'full of', examples:[{w:'beautiful',m:'美麗的'},{w:'helpful',m:'有幫助的'}] },
+  { id:'s_less', type:'suffix', form:'-less', cat:'形容詞', zh:'無…的', en:'without', examples:[{w:'useless',m:'無用的'},{w:'helpless',m:'無助的'}] },
+  { id:'s_ive', type:'suffix', form:'-ive/-ative', cat:'形容詞', zh:'有…性質的、傾向…的', en:'tending to, having nature of', examples:[{w:'active',m:'主動的'},{w:'creative',m:'有創造力的'}] },
+  { id:'s_ic', type:'suffix', form:'-ic', cat:'形容詞', zh:'…的、有關…的', en:'relating to', examples:[{w:'basic',m:'基本的'},{w:'heroic',m:'英勇的'}] },
+  { id:'s_ish', type:'suffix', form:'-ish', cat:'形容詞', zh:'有點…的、屬於…的', en:'somewhat, belonging to', examples:[{w:'childish',m:'幼稚的'},{w:'reddish',m:'偏紅的'},{w:'Spanish',m:'西班牙的'}] },
+  { id:'s_like', type:'suffix', form:'-like/-ly_adj', cat:'形容詞', zh:'像…的', en:'like, resembling', examples:[{w:'childlike',m:'孩子般的'},{w:'friendly',m:'友善的'}] },
+  { id:'s_ant', type:'suffix', form:'-ant/-ent', cat:'形容詞', zh:'…的、做…的', en:'being, doing', examples:[{w:'important',m:'重要的'},{w:'different',m:'不同的'},{w:'student',m:'學生'}] },
+  { id:'s_ary', type:'suffix', form:'-ary/-ory', cat:'形容詞', zh:'屬於…的、與…有關的', en:'of, relating to', examples:[{w:'ordinary',m:'普通的'},{w:'mandatory',m:'強制的'}] },
+  { id:'s_ine', type:'suffix', form:'-ine', cat:'形容詞', zh:'…的、像…的', en:'relating to, like', examples:[{w:'feminine',m:'女性的'},{w:'marine',m:'海洋的'}] },
+  { id:'s_oid', type:'suffix', form:'-oid', cat:'形容詞', zh:'類似…的', en:'resembling', examples:[{w:'humanoid',m:'人形的'},{w:'android',m:'機器人'}] },
+  { id:'s_escent', type:'suffix', form:'-escent', cat:'形容詞', zh:'逐漸變…的', en:'becoming', examples:[{w:'adolescent',m:'青春期的'},{w:'fluorescent',m:'螢光的'}] },
+  { id:'s_proof', type:'suffix', form:'-proof', cat:'形容詞', zh:'防…的', en:'protected against', examples:[{w:'waterproof',m:'防水的'},{w:'bulletproof',m:'防彈的'}] },
+  { id:'s_worthy', type:'suffix', form:'-worthy', cat:'形容詞', zh:'值得…的', en:'worthy of', examples:[{w:'trustworthy',m:'值得信賴的'},{w:'noteworthy',m:'值得注意的'}] },
+
+  // ============ SUFFIXES (動詞) ============
+  { id:'s_ize', type:'suffix', form:'-ize/-ise', cat:'動詞', zh:'使成為…、…化', en:'to make, to become', examples:[{w:'modernize',m:'現代化'},{w:'realize',m:'意識到'}] },
+  { id:'s_ify', type:'suffix', form:'-ify/-fy', cat:'動詞', zh:'使…化', en:'to make', examples:[{w:'simplify',m:'簡化'},{w:'purify',m:'淨化'},{w:'classify',m:'分類'}] },
+  { id:'s_en', type:'suffix', form:'-en', cat:'動詞', zh:'使成為…', en:'to make, to become', examples:[{w:'strengthen',m:'加強'},{w:'widen',m:'加寬'},{w:'broaden',m:'拓寬'}] },
+  { id:'s_ate', type:'suffix', form:'-ate', cat:'動詞', zh:'使、做', en:'to make, to act', examples:[{w:'activate',m:'啟動'},{w:'create',m:'創造'},{w:'evaluate',m:'評估'}] },
+
+  // ============ SUFFIXES (副詞) ============
+  { id:'s_ly', type:'suffix', form:'-ly', cat:'副詞', zh:'…地', en:'in the manner of', examples:[{w:'quickly',m:'快速地'},{w:'happily',m:'快樂地'}] },
+  { id:'s_ward', type:'suffix', form:'-ward(s)', cat:'副詞', zh:'向…方向', en:'in the direction of', examples:[{w:'forward',m:'向前'},{w:'backward',m:'向後'}] },
+  { id:'s_wise', type:'suffix', form:'-wise', cat:'副詞', zh:'以…方式', en:'in the manner of', examples:[{w:'clockwise',m:'順時針'},{w:'otherwise',m:'否則'}] },
+
+  // ============ SUFFIXES (動詞/形容詞 共用) ============
+  { id:'s_ed', type:'suffix', form:'-ed', cat:'形容詞', zh:'被…的、已…的', en:'past, passive', examples:[{w:'tired',m:'疲倦的'},{w:'excited',m:'興奮的'}] },
+  { id:'s_ing', type:'suffix', form:'-ing', cat:'形容詞', zh:'令人…的、進行中的', en:'causing, ongoing', examples:[{w:'interesting',m:'有趣的'},{w:'amazing',m:'驚人的'}] },
+];
+
+// ============ APP STATE ============
+const STATE_KEY = 'morphemeMasterV1';
+const DEFAULT_STATE = {
+  srs: {},          // { id: { box, ease, interval, reps, lapses, nextReview, lastReview, correct, wrong, recent: [0/1,...] } }
+  stats: {
+    totalAnswered: 0,
+    totalCorrect: 0,
+    totalWrong: 0,
+    sessions: [],   // { date, answered, correct }
+    streak: 0,
+    lastActiveDate: null,
+    learnedIds: [],
+  },
+  settings: {
+    newPerSession: 10,
+    reviewBatch: 20,
+    dark: false,
+    questionMix: { meaningFromForm:true, formFromMeaning:true, exampleToMorpheme:true },
+    filterCat: 'all',
+    filterType: 'all',
+  },
+  view: 'dashboard',
+};
+
+// ============ AUTH & CLOUD SYNC ============
+let currentUser = null;
+let cloudSyncTimer = null;
+
+function mergeState(data) {
+  return { ...structuredClone(DEFAULT_STATE), ...data,
+    settings: {...DEFAULT_STATE.settings, ...(data.settings||{})},
+    stats:    {...DEFAULT_STATE.stats,    ...(data.stats||{})} };
+}
+
+function loadStateLocal() {
+  try {
+    const raw = localStorage.getItem(STATE_KEY);
+    return raw ? mergeState(JSON.parse(raw)) : structuredClone(DEFAULT_STATE);
+  } catch(e) { return structuredClone(DEFAULT_STATE); }
+}
+
+async function loadStateFromCloud(uid) {
+  try {
+    const doc = await db.collection('users').doc(uid).get();
+    if (doc.exists) {
+      state = mergeState(doc.data());
+      localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    }
+  } catch(e) { console.warn('Cloud load failed, using local:', e); }
+}
+
+function saveStateToCloud() {
+  if (!currentUser) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(async () => {
+    try {
+      await db.collection('users').doc(currentUser.uid).set(state);
+    } catch(e) { console.warn('Cloud save failed:', e); }
+  }, 2500); // debounce: write to Firestore at most once every 2.5s
+}
+
+function saveState() {
+  localStorage.setItem(STATE_KEY, JSON.stringify(state));
+  saveStateToCloud();
+}
+
+let state = loadStateLocal();
+
+function todayStr() { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+function updateStreak() {
+  const today = todayStr();
+  const last = state.stats.lastActiveDate;
+  if (last === today) return;
+  if (!last) { state.stats.streak = 1; }
+  else {
+    const yest = new Date(); yest.setDate(yest.getDate()-1);
+    const y = yest.getFullYear()+'-'+String(yest.getMonth()+1).padStart(2,'0')+'-'+String(yest.getDate()).padStart(2,'0');
+    state.stats.streak = (last === y) ? state.stats.streak+1 : 1;
+  }
+  state.stats.lastActiveDate = today;
+  saveState();
+}
+
+// ============ SRS (SM-2 simplified) ============
+function getSrs(id) {
+  if (!state.srs[id]) {
+    state.srs[id] = { box:0, ease:2.5, interval:0, reps:0, lapses:0, nextReview:0, lastReview:0, correct:0, wrong:0, recent:[] };
+  }
+  return state.srs[id];
+}
+
+// quality: 0 (wrong), 1 (hard), 2 (good), 3 (easy)
+function scheduleReview(id, quality) {
+  const s = getSrs(id);
+  s.lastReview = Date.now();
+  s.reps += 1;
+  if (quality === 0) {
+    s.wrong += 1;
+    s.lapses += 1;
+    s.box = Math.max(0, s.box - 1);
+    s.interval = 0;
+    s.ease = Math.max(1.3, s.ease - 0.2);
+  } else {
+    s.correct += 1;
+    if (quality >= 2) s.box = Math.min(5, s.box + 1);
+    const baseIntervals = [0.007, 1, 3, 7, 16, 35, 90]; // days
+    s.interval = baseIntervals[s.box] || 90;
+    if (quality === 3) s.ease = Math.min(3.0, s.ease + 0.1);
+    if (quality === 1) s.ease = Math.max(1.3, s.ease - 0.1);
+  }
+  s.nextReview = Date.now() + s.interval * 86400000;
+  s.recent.push(quality === 0 ? 0 : 1);
+  if (s.recent.length > 8) s.recent.shift();
+
+  // stats
+  state.stats.totalAnswered += 1;
+  if (quality === 0) state.stats.totalWrong += 1; else state.stats.totalCorrect += 1;
+  const today = todayStr();
+  let session = state.stats.sessions.find(x => x.date === today);
+  if (!session) { session = { date: today, answered: 0, correct: 0 }; state.stats.sessions.push(session); }
+  session.answered += 1;
+  if (quality !== 0) session.correct += 1;
+
+  if (!state.stats.learnedIds.includes(id) && s.reps >= 1) state.stats.learnedIds.push(id);
+
+  updateStreak();
+  saveState();
+}
+
+function getDueIds() {
+  const now = Date.now();
+  return Object.keys(state.srs).filter(id => state.srs[id].nextReview <= now && state.srs[id].reps > 0);
+}
+function getErrorProneIds() {
+  // weak if: recent accuracy < 60% OR lapses >= 2 OR box <= 1 with reps >= 2
+  return Object.keys(state.srs).filter(id => {
+    const s = state.srs[id];
+    if (s.reps < 2) return false;
+    const recent = s.recent.slice(-5);
+    const acc = recent.length ? recent.reduce((a,b)=>a+b,0)/recent.length : 1;
+    return acc < 0.6 || s.lapses >= 2 || (s.box <= 1 && s.reps >= 2);
+  });
+}
+function getUnlearnedIds() {
+  return MORPHEMES.filter(m => !state.srs[m.id] || state.srs[m.id].reps === 0).map(m => m.id);
+}
+
+// ============ QUESTION GENERATORS ============
+function pickN(arr, n, excludeId) {
+  const pool = arr.filter(x => x.id !== excludeId);
+  const out = [];
+  while (out.length < n && pool.length) {
+    const i = Math.floor(Math.random() * pool.length);
+    out.push(pool.splice(i,1)[0]);
+  }
+  return out;
+}
+function byType(t) { return MORPHEMES.filter(m => m.type === t); }
+
+function genQuestion(item, mode) {
+  mode = mode || randomMode(item);
+  const sameType = byType(item.type);
+  if (mode === 'meaning_from_form') {
+    const distractors = pickN(sameType, 3, item.id);
+    const opts = [item, ...distractors].sort(() => Math.random()-0.5);
+    return {
+      type: 'mcq',
+      mode,
+      prompt: `<div class="text-center py-4"><div class="text-sm text-slate-500 mb-2">下列<strong>${typeLabel(item.type)}</strong>「<span class="mono font-bold text-indigo-600 text-xl">${item.form}</span>」的意思是？</div></div>`,
+      options: opts.map(o => ({ label: `${o.zh} <span class="text-xs text-slate-400">(${o.en})</span>`, correct: o.id === item.id })),
+      item,
+    };
+  }
+  if (mode === 'form_from_meaning') {
+    const distractors = pickN(sameType, 3, item.id);
+    const opts = [item, ...distractors].sort(() => Math.random()-0.5);
+    return {
+      type: 'mcq',
+      mode,
+      prompt: `<div class="text-center py-4"><div class="text-sm text-slate-500 mb-2">意思為「<strong class="text-indigo-600">${item.zh}</strong>」的${typeLabel(item.type)}是？</div></div>`,
+      options: opts.map(o => ({ label: `<span class="mono font-bold">${o.form}</span>`, correct: o.id === item.id })),
+      item,
+    };
+  }
+  if (mode === 'example_to_morpheme') {
+    if (!item.examples || !item.examples.length) return genQuestion(item, 'meaning_from_form');
+    const ex = item.examples[Math.floor(Math.random() * item.examples.length)];
+    const distractors = pickN(sameType, 3, item.id);
+    const opts = [item, ...distractors].sort(() => Math.random()-0.5);
+    return {
+      type: 'mcq',
+      mode,
+      prompt: `<div class="text-center py-4"><div class="text-sm text-slate-500 mb-2">單字「<strong class="text-indigo-600 text-lg">${ex.w}</strong>」（${ex.m}）中含有的${typeLabel(item.type)}是？</div></div>`,
+      options: opts.map(o => ({ label: `<span class="mono font-bold">${o.form}</span> <span class="text-xs text-slate-500">(${o.zh})</span>`, correct: o.id === item.id })),
+      item,
+    };
+  }
+  return genQuestion(item, 'meaning_from_form');
+}
+function typeLabel(t) { return t === 'prefix' ? '字首' : t === 'root' ? '字根' : '字尾'; }
+function randomMode(item) {
+  const modes = [];
+  if (state.settings.questionMix.meaningFromForm) modes.push('meaning_from_form');
+  if (state.settings.questionMix.formFromMeaning) modes.push('form_from_meaning');
+  if (state.settings.questionMix.exampleToMorpheme && item.examples && item.examples.length) modes.push('example_to_morpheme');
+  if (!modes.length) return 'meaning_from_form';
+  return modes[Math.floor(Math.random() * modes.length)];
+}
+
+// ============ RENDERING ============
+const app = document.getElementById('app');
+function $(sel, root) { return (root || document).querySelector(sel); }
+function $$(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
+function toast(msg) {
+  const t = $('#toast'); t.firstElementChild.textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(()=> t.classList.add('hidden'), 1800);
+}
+
+function setView(v) {
+  state.view = v; saveState();
+  $$('.sidebar-link').forEach(a => a.classList.toggle('active', a.getAttribute('data-view') === v));
+  const titles = { dashboard:'儀表板', learn:'學習新詞素', review:'間隔複習', practice:'自由練習', errors:'錯題強化', browse:'詞素字典', stats:'學習統計', settings:'設定' };
+  $('#pageTitle').textContent = titles[v] || '';
+  render();
+}
+
+function render() {
+  refreshBadges();
+  switch (state.view) {
+    case 'dashboard': renderDashboard(); break;
+    case 'learn': renderLearn(); break;
+    case 'review': renderReview(); break;
+    case 'practice': renderPractice(); break;
+    case 'errors': renderErrors(); break;
+    case 'browse': renderBrowse(); break;
+    case 'stats': renderStats(); break;
+    case 'settings': renderSettings(); break;
+    default: renderDashboard();
+  }
+}
+
+function refreshBadges() {
+  const dueCount = getDueIds().length;
+  const errCount = getErrorProneIds().length;
+  $('#reviewBadge').textContent = dueCount > 0 ? dueCount : '';
+  $('#errorBadge').textContent = errCount > 0 ? errCount : '';
+  const today = todayStr();
+  const s = state.stats.sessions.find(x => x.date === today);
+  $('#todayCount').textContent = s ? s.answered : 0;
+  $('#streakCount').textContent = state.stats.streak || 0;
+}
+
+// ============ DASHBOARD ============
+function renderDashboard() {
+  const total = MORPHEMES.length;
+  const learned = state.stats.learnedIds.length;
+  const mastered = Object.values(state.srs).filter(s => s.box >= 4).length;
+  const due = getDueIds().length;
+  const err = getErrorProneIds().length;
+  const today = todayStr();
+  const todaySess = state.stats.sessions.find(x => x.date === today) || { answered:0, correct:0 };
+  const accuracy = state.stats.totalAnswered ? Math.round(100 * state.stats.totalCorrect / state.stats.totalAnswered) : 0;
+  const progressPct = Math.round(100 * learned / total);
+
+  app.innerHTML = `
+    <div class="max-w-6xl mx-auto space-y-6">
+      <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <div class="text-sm opacity-90">${new Date().toLocaleDateString('zh-TW', { weekday:'long' })}，${todayStr()}</div>
+            <h1 class="text-2xl font-bold mt-1">歡迎回來，${state.stats.streak ? '連續 '+state.stats.streak+' 天' : '開始你的學習旅程'} 🎉</h1>
+            <p class="opacity-90 mt-2 text-sm">目前已認識 <b>${learned}</b>／${total} 個詞素，掌握 <b>${mastered}</b> 個</p>
+          </div>
+          <div class="text-right">
+            <div class="text-4xl font-bold">${progressPct}%</div>
+            <div class="text-xs opacity-75">整體進度</div>
+          </div>
+        </div>
+        <div class="mt-4 bg-white/20 rounded-full h-2 overflow-hidden">
+          <div class="bg-white h-full rounded-full transition-all" style="width:${progressPct}%"></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        ${dashCard('📚', '待學', getUnlearnedIds().length, 'text-blue-600', ()=>setView('learn'))}
+        ${dashCard('🔁', '到期複習', due, 'text-indigo-600', ()=>setView('review'))}
+        ${dashCard('⚠️', '錯題', err, 'text-red-600', ()=>setView('errors'))}
+        ${dashCard('✅', '今日作答', todaySess.answered, 'text-green-600', ()=>setView('stats'))}
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
+          <h3 class="font-bold mb-3 flex items-center gap-2">🚀 快速開始</h3>
+          <div class="space-y-2">
+            <button class="tap w-full text-left px-4 py-3 rounded-lg bg-gradient-to-r from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/30 hover:from-indigo-100 hover:to-indigo-200 text-indigo-800 dark:text-indigo-200 transition" onclick="setView('learn')">
+              <div class="font-semibold">📚 學習 ${state.settings.newPerSession} 個新詞素</div>
+              <div class="text-xs opacity-75">從字首、字根、字尾中挑選</div>
+            </button>
+            ${due > 0 ? `<button class="tap w-full text-left px-4 py-3 rounded-lg bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 hover:from-purple-100 hover:to-purple-200 text-purple-800 dark:text-purple-200 transition" onclick="setView('review')">
+              <div class="font-semibold">🔁 複習 ${due} 個已到期詞素</div>
+              <div class="text-xs opacity-75">間隔重複演算法自動排程</div>
+            </button>` : ''}
+            ${err > 0 ? `<button class="tap w-full text-left px-4 py-3 rounded-lg bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 hover:from-red-100 hover:to-red-200 text-red-800 dark:text-red-200 transition" onclick="setView('errors')">
+              <div class="font-semibold">⚠️ 強化 ${err} 個易錯詞素</div>
+              <div class="text-xs opacity-75">針對常錯項目重點練習</div>
+            </button>` : ''}
+            <button class="tap w-full text-left px-4 py-3 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition" onclick="setView('practice')">
+              <div class="font-semibold">🎯 自由練習</div>
+              <div class="text-xs opacity-75">按分類或類型練習</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
+          <h3 class="font-bold mb-3 flex items-center gap-2">📊 本週學習</h3>
+          ${renderWeekChart()}
+          <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 grid grid-cols-3 gap-2 text-center text-sm">
+            <div><div class="text-2xl font-bold text-indigo-600">${state.stats.totalAnswered}</div><div class="text-xs text-slate-500">總作答</div></div>
+            <div><div class="text-2xl font-bold text-green-600">${accuracy}%</div><div class="text-xs text-slate-500">正確率</div></div>
+            <div><div class="text-2xl font-bold text-orange-600">${state.stats.streak}</div><div class="text-xs text-slate-500">連續天數</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
+        <h3 class="font-bold mb-3">📂 依類別分佈</h3>
+        ${renderCategorySummary()}
+      </div>
+    </div>
+  `;
+}
+function dashCard(emoji, label, value, cls, onclick) {
+  const id = 'dc_' + Math.random().toString(36).slice(2,7);
+  setTimeout(()=> { const el = document.getElementById(id); if (el) el.onclick = onclick; });
+  return `<div id="${id}" class="tap bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-700 card">
+    <div class="text-2xl">${emoji}</div>
+    <div class="text-xs text-slate-500 mt-2">${label}</div>
+    <div class="text-2xl font-bold ${cls}">${value}</div>
+  </div>`;
+}
+function renderWeekChart() {
+  const days = [];
+  for (let i=6; i>=0; i--) { const d = new Date(); d.setDate(d.getDate()-i); days.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); }
+  const max = Math.max(1, ...days.map(dt => (state.stats.sessions.find(s=>s.date===dt)||{answered:0}).answered));
+  return `<div class="flex items-end justify-between gap-2 h-24">
+    ${days.map(dt => {
+      const s = state.stats.sessions.find(x=>x.date===dt) || {answered:0,correct:0};
+      const pct = Math.round(100 * s.answered / max);
+      const day = dt.slice(-2);
+      return `<div class="flex-1 flex flex-col items-center justify-end h-full">
+        <div class="w-full bg-indigo-200 dark:bg-indigo-900 rounded-t relative group" style="height:${Math.max(2, pct)}%">
+          <div class="progress-bar h-full rounded-t"></div>
+          <span class="hidden group-hover:block absolute -top-7 left-1/2 -translate-x-1/2 text-xs bg-slate-900 text-white px-2 py-1 rounded">${s.answered}</span>
+        </div>
+        <div class="text-[10px] text-slate-500 mt-1">${day}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function renderCategorySummary() {
+  const cats = {};
+  MORPHEMES.forEach(m => {
+    const key = m.type + ':' + m.cat;
+    if (!cats[key]) cats[key] = { type: m.type, cat: m.cat, total: 0, learned: 0 };
+    cats[key].total += 1;
+    if (state.srs[m.id] && state.srs[m.id].reps > 0) cats[key].learned += 1;
+  });
+  const rows = Object.values(cats).sort((a,b) => a.type.localeCompare(b.type) || a.cat.localeCompare(b.cat));
+  return `<div class="space-y-2 scroll-thin max-h-80 overflow-auto">
+    ${rows.map(r => {
+      const pct = Math.round(100 * r.learned / r.total);
+      return `<div class="flex items-center gap-3 text-sm">
+        <span class="chip ${typeChipClass(r.type)}">${typeLabel(r.type)}</span>
+        <span class="flex-1 font-medium">${r.cat}</span>
+        <span class="text-xs text-slate-500 mono">${r.learned}/${r.total}</span>
+        <div class="w-24 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+          <div class="progress-bar h-full" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function typeChipClass(t) { return t==='prefix' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' : t==='root' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200'; }
+
+// ============ LEARN VIEW ============
+let learnSession = null;
+function renderLearn() {
+  if (!learnSession) {
+    const candidates = getUnlearnedIds();
+    if (!candidates.length) {
+      app.innerHTML = `<div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-xl text-center">
+        <div class="text-5xl mb-3">🎉</div>
+        <h2 class="text-xl font-bold">太棒了！所有詞素都已開始學習</h2>
+        <p class="text-slate-500 mt-2">前往「間隔複習」或「錯題強化」繼續鞏固</p>
+        <div class="mt-4 flex justify-center gap-2">
+          <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg" onclick="setView('review')">去複習</button>
+          <button class="px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg" onclick="setView('browse')">瀏覽字典</button>
+        </div>
+      </div>`;
+      return;
+    }
+    app.innerHTML = `<div class="max-w-3xl mx-auto bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+      <h2 class="font-bold text-lg mb-2">開始新的學習</h2>
+      <p class="text-sm text-slate-500 mb-4">還有 <b>${candidates.length}</b> 個詞素未學。本輪將學習 ${Math.min(state.settings.newPerSession, candidates.length)} 個。</p>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4 text-sm">
+        <label class="flex items-center gap-2"><input type="radio" name="ltype" value="all" checked> 全部類型</label>
+        <label class="flex items-center gap-2"><input type="radio" name="ltype" value="prefix"> 僅字首</label>
+        <label class="flex items-center gap-2"><input type="radio" name="ltype" value="root"> 僅字根</label>
+        <label class="flex items-center gap-2"><input type="radio" name="ltype" value="suffix"> 僅字尾</label>
+      </div>
+      <button id="startLearn" class="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700">開始學習 →</button>
+    </div>`;
+    $('#startLearn').onclick = () => {
+      const t = document.querySelector('input[name="ltype"]:checked').value;
+      let pool = getUnlearnedIds().map(id => MORPHEMES.find(m => m.id === id));
+      if (t !== 'all') pool = pool.filter(m => m.type === t);
+      pool.sort(() => Math.random()-0.5);
+      learnSession = { queue: pool.slice(0, state.settings.newPerSession), idx: 0, phase: 'intro' };
+      renderLearn();
+    };
+    return;
+  }
+  if (learnSession.idx >= learnSession.queue.length) {
+    const n = learnSession.queue.length;
+    learnSession = null;
+    app.innerHTML = `<div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-xl text-center">
+      <div class="text-5xl mb-3">✅</div>
+      <h2 class="text-xl font-bold">這一輪完成了！</h2>
+      <p class="text-slate-500 mt-2">學習了 ${n} 個新詞素，將在之後的複習中鞏固</p>
+      <div class="mt-4 flex justify-center gap-2">
+        <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg" onclick="renderLearn()">再學一輪</button>
+        <button class="px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg" onclick="setView('dashboard')">回主頁</button>
+      </div>
+    </div>`;
+    return;
+  }
+  const item = learnSession.queue[learnSession.idx];
+  const progress = Math.round(100 * learnSession.idx / learnSession.queue.length);
+  if (learnSession.phase === 'intro') {
+    app.innerHTML = `<div class="max-w-3xl mx-auto">
+      <div class="mb-4"><div class="flex justify-between text-xs mb-1"><span>${learnSession.idx+1} / ${learnSession.queue.length}</span><span>${progress}%</span></div>
+      <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden"><div class="progress-bar h-full" style="width:${progress}%"></div></div></div>
+      ${renderMorphemeCard(item, true)}
+      <div class="mt-4 grid grid-cols-2 gap-2">
+        <button class="px-4 py-3 bg-slate-200 dark:bg-slate-700 rounded-lg" id="skipLearn">略過</button>
+        <button class="px-4 py-3 bg-indigo-600 text-white rounded-lg font-semibold" id="testLearn">小測一下 →</button>
+      </div>
+    </div>`;
+    $('#skipLearn').onclick = () => { learnSession.idx++; renderLearn(); };
+    $('#testLearn').onclick = () => { learnSession.phase = 'test'; renderLearn(); };
+    return;
+  }
+  // test phase
+  const q = genQuestion(item);
+  renderMCQ(q, (correct) => {
+    scheduleReview(item.id, correct ? 2 : 0);
+    setTimeout(()=> {
+      learnSession.phase = 'intro';
+      learnSession.idx++;
+      renderLearn();
+    }, 1200);
+  }, { header: `${learnSession.idx+1}/${learnSession.queue.length} · 學習測驗` });
+}
+
+function renderMorphemeCard(item, detailed) {
+  return `<div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
+    <div class="flex items-start justify-between flex-wrap gap-3">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="chip ${typeChipClass(item.type)}">${typeLabel(item.type)}</span>
+          <span class="chip bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">${item.cat}</span>
+        </div>
+        <div class="mono text-3xl md:text-4xl font-bold text-indigo-600">${item.form}</div>
+        <div class="mt-2 text-lg">${item.zh}</div>
+        <div class="text-sm text-slate-500">${item.en}</div>
+      </div>
+      <div class="text-right text-xs text-slate-500">
+        ${state.srs[item.id] ? `
+          <div>Box ${state.srs[item.id].box}/5</div>
+          <div>正確: ${state.srs[item.id].correct}</div>
+          <div>錯誤: ${state.srs[item.id].wrong}</div>
+        ` : '<div>尚未學習</div>'}
+      </div>
+    </div>
+    ${item.examples && item.examples.length ? `
+      <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+        <div class="text-xs font-semibold text-slate-500 mb-2">📝 例字</div>
+        <div class="grid md:grid-cols-${detailed?2:3} gap-2">
+          ${item.examples.map(e => `<div class="bg-slate-50 dark:bg-slate-900/50 rounded px-3 py-2">
+            <div class="font-semibold">${e.w}</div>
+            <div class="text-xs text-slate-500">${e.m}</div>
+          </div>`).join('')}
+        </div>
+      </div>` : ''}
+    ${item.note ? `<div class="mt-3 text-xs text-amber-700 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-300 p-2 rounded">💡 ${item.note}</div>` : ''}
+  </div>`;
+}
+
+function renderMCQ(q, onAnswer, opts) {
+  opts = opts || {};
+  app.innerHTML = `<div class="max-w-3xl mx-auto">
+    ${opts.header ? `<div class="text-xs text-slate-500 mb-2">${opts.header}</div>` : ''}
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
+      ${q.prompt}
+      <div class="grid gap-2 mt-4" id="mcqOpts">
+        ${q.options.map((o, i) => `<button data-i="${i}" class="answer-btn tap text-left px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-lg hover:border-indigo-400 dark:hover:border-indigo-400">
+          <span class="text-xs text-slate-400 mono mr-2">${String.fromCharCode(65+i)}.</span>${o.label}
+        </button>`).join('')}
+      </div>
+      <div id="mcqFeedback" class="mt-4 hidden"></div>
+    </div>
+    <div class="text-xs text-slate-400 text-center mt-3">按 <kbd>A</kbd>/<kbd>B</kbd>/<kbd>C</kbd>/<kbd>D</kbd> 或 <kbd>1</kbd>-<kbd>4</kbd> 選擇</div>
+  </div>`;
+  let answered = false;
+  function handle(i) {
+    if (answered) return; answered = true;
+    const btns = $$('#mcqOpts button');
+    btns.forEach((b, idx) => {
+      if (q.options[idx].correct) b.classList.add('correct');
+      if (idx === i && !q.options[idx].correct) b.classList.add('wrong');
+      b.disabled = true;
+    });
+    const isCorrect = q.options[i].correct;
+    const fb = $('#mcqFeedback');
+    fb.classList.remove('hidden');
+    if (isCorrect) {
+      fb.innerHTML = `<div class="p-3 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded">✅ 答對了！</div>`;
+    } else {
+      fb.innerHTML = `<div class="p-3 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 rounded">
+        ❌ 答錯了。${renderAnswerExplain(q.item)}
+      </div>`;
+    }
+    onAnswer(isCorrect);
+  }
+  $$('#mcqOpts button').forEach((b, i) => b.onclick = () => handle(i));
+  document.onkeydown = (e) => {
+    if (answered) return;
+    const k = e.key.toLowerCase();
+    const map = { 'a':0,'b':1,'c':2,'d':3,'1':0,'2':1,'3':2,'4':3 };
+    if (k in map) { e.preventDefault(); handle(map[k]); }
+  };
+}
+function renderAnswerExplain(item) {
+  return `<div class="mt-2 text-sm">
+    <div class="mono font-bold text-indigo-700 dark:text-indigo-300">${item.form}</div>
+    <div>${item.zh} · ${item.en}</div>
+    ${item.examples && item.examples.length ? `<div class="text-xs mt-1">例：${item.examples.slice(0,2).map(e => e.w+' ('+e.m+')').join('、')}</div>` : ''}
+  </div>`;
+}
+
+// ============ REVIEW VIEW ============
+let reviewSession = null;
+function renderReview() {
+  if (!reviewSession) {
+    const dueIds = getDueIds();
+    if (!dueIds.length) {
+      app.innerHTML = `<div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-xl text-center">
+        <div class="text-5xl mb-3">🌟</div>
+        <h2 class="text-xl font-bold">目前沒有到期的複習</h2>
+        <p class="text-slate-500 mt-2">好好休息，或去學習新詞素！</p>
+        <div class="mt-4 flex justify-center gap-2">
+          <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg" onclick="setView('learn')">學新詞素</button>
+          <button class="px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg" onclick="setView('practice')">自由練習</button>
+        </div>
+      </div>`;
+      return;
+    }
+    const queue = dueIds.sort(()=> Math.random()-0.5).slice(0, state.settings.reviewBatch).map(id => MORPHEMES.find(m => m.id === id));
+    reviewSession = { queue, idx:0, correct:0, wrong:0 };
+  }
+  if (reviewSession.idx >= reviewSession.queue.length) {
+    const n = reviewSession.queue.length;
+    const c = reviewSession.correct;
+    const acc = Math.round(100 * c / n);
+    reviewSession = null;
+    app.innerHTML = `<div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-xl text-center">
+      <div class="text-5xl mb-3">${acc>=80?'🏆':acc>=60?'👍':'💪'}</div>
+      <h2 class="text-xl font-bold">複習完成！</h2>
+      <p class="text-slate-500 mt-2">${c}／${n} 答對 (${acc}%)</p>
+      <div class="mt-4 flex justify-center gap-2">
+        <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg" onclick="renderReview()">繼續複習</button>
+        <button class="px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg" onclick="setView('dashboard')">回主頁</button>
+      </div>
+    </div>`;
+    return;
+  }
+  const item = reviewSession.queue[reviewSession.idx];
+  const q = genQuestion(item);
+  const progress = Math.round(100 * reviewSession.idx / reviewSession.queue.length);
+  app.innerHTML = `<div class="max-w-3xl mx-auto">
+    <div class="mb-4"><div class="flex justify-between text-xs mb-1">
+      <span>🔁 ${reviewSession.idx+1}/${reviewSession.queue.length} · 正確 ${reviewSession.correct}｜錯 ${reviewSession.wrong}</span><span>${progress}%</span>
+    </div>
+    <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden"><div class="progress-bar h-full" style="width:${progress}%"></div></div></div>
+    <div id="qArea"></div>
+  </div>`;
+  const mount = $('#qArea');
+  const tmpApp = document.createElement('div'); mount.appendChild(tmpApp);
+  const origApp = app;
+  // render MCQ into a sub-container by temporarily redirecting
+  const prevInnerHTML = tmpApp.outerHTML;
+  // Use renderMCQ but force target
+  renderMCQSub(tmpApp, q, (correct) => {
+    if (correct) reviewSession.correct++; else reviewSession.wrong++;
+    scheduleReview(item.id, correct ? 2 : 0);
+    setTimeout(()=> {
+      reviewSession.idx++;
+      renderReview();
+    }, 1100);
+  });
+}
+// Variant that renders into a given element
+function renderMCQSub(target, q, onAnswer) {
+  target.outerHTML = `<div id="${target.id||('tmp_'+Math.random().toString(36).slice(2,6))}">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
+      ${q.prompt}
+      <div class="grid gap-2 mt-4" id="mcqOpts2">
+        ${q.options.map((o, i) => `<button data-i="${i}" class="answer-btn tap text-left px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-lg hover:border-indigo-400">
+          <span class="text-xs text-slate-400 mono mr-2">${String.fromCharCode(65+i)}.</span>${o.label}
+        </button>`).join('')}
+      </div>
+      <div id="mcqFeedback2" class="mt-4 hidden"></div>
+    </div>
+    <div class="text-xs text-slate-400 text-center mt-3">按 <kbd>A</kbd>-<kbd>D</kbd> 選擇</div>
+  </div>`;
+  let answered = false;
+  function handle(i) {
+    if (answered) return; answered = true;
+    const btns = $$('#mcqOpts2 button');
+    btns.forEach((b, idx) => {
+      if (q.options[idx].correct) b.classList.add('correct');
+      if (idx === i && !q.options[idx].correct) b.classList.add('wrong');
+      b.disabled = true;
+    });
+    const isCorrect = q.options[i].correct;
+    const fb = $('#mcqFeedback2');
+    fb.classList.remove('hidden');
+    fb.innerHTML = isCorrect
+      ? `<div class="p-3 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded">✅ 答對！</div>`
+      : `<div class="p-3 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 rounded">❌ 答錯。${renderAnswerExplain(q.item)}</div>`;
+    onAnswer(isCorrect);
+  }
+  $$('#mcqOpts2 button').forEach((b, i) => b.onclick = () => handle(i));
+  document.onkeydown = (e) => {
+    if (answered) return;
+    const k = e.key.toLowerCase();
+    const map = { 'a':0,'b':1,'c':2,'d':3,'1':0,'2':1,'3':2,'4':3 };
+    if (k in map) { e.preventDefault(); handle(map[k]); }
+  };
+}
+
+// ============ PRACTICE VIEW ============
+let practiceSession = null;
+function renderPractice() {
+  if (!practiceSession) {
+    const cats = Array.from(new Set(MORPHEMES.map(m => m.cat))).sort();
+    app.innerHTML = `<div class="max-w-3xl mx-auto bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+      <h2 class="font-bold text-lg mb-3">🎯 自由練習</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-medium">類型</label>
+          <select id="pType" class="mt-1 w-full px-3 py-2 border dark:bg-slate-900 border-slate-300 dark:border-slate-600 rounded-lg">
+            <option value="all">全部</option>
+            <option value="prefix">字首</option>
+            <option value="root">字根</option>
+            <option value="suffix">字尾</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm font-medium">分類</label>
+          <select id="pCat" class="mt-1 w-full px-3 py-2 border dark:bg-slate-900 border-slate-300 dark:border-slate-600 rounded-lg">
+            <option value="all">全部</option>
+            ${cats.map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="text-sm font-medium">題數</label>
+          <select id="pCount" class="mt-1 w-full px-3 py-2 border dark:bg-slate-900 border-slate-300 dark:border-slate-600 rounded-lg">
+            <option value="10">10</option><option value="20" selected>20</option><option value="30">30</option><option value="50">50</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm font-medium">範圍</label>
+          <select id="pScope" class="mt-1 w-full px-3 py-2 border dark:bg-slate-900 border-slate-300 dark:border-slate-600 rounded-lg">
+            <option value="all">全部</option>
+            <option value="learned">僅已學</option>
+            <option value="unlearned">僅未學</option>
+          </select>
+        </div>
+      </div>
+      <button id="startPractice" class="mt-4 w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold">開始練習 →</button>
+    </div>`;
+    $('#startPractice').onclick = () => {
+      const t = $('#pType').value, c = $('#pCat').value, n = parseInt($('#pCount').value), sc = $('#pScope').value;
+      let pool = MORPHEMES.slice();
+      if (t !== 'all') pool = pool.filter(m => m.type === t);
+      if (c !== 'all') pool = pool.filter(m => m.cat === c);
+      if (sc === 'learned') pool = pool.filter(m => state.srs[m.id] && state.srs[m.id].reps > 0);
+      if (sc === 'unlearned') pool = pool.filter(m => !state.srs[m.id] || state.srs[m.id].reps === 0);
+      if (!pool.length) { toast('此條件下無詞素'); return; }
+      pool.sort(()=> Math.random()-0.5);
+      const queue = [];
+      for (let i=0; i<n; i++) queue.push(pool[i % pool.length]);
+      practiceSession = { queue, idx:0, correct:0, wrong:0 };
+      renderPractice();
+    };
+    return;
+  }
+  if (practiceSession.idx >= practiceSession.queue.length) {
+    const n = practiceSession.queue.length, c = practiceSession.correct, acc = Math.round(100*c/n);
+    practiceSession = null;
+    app.innerHTML = `<div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-xl text-center">
+      <div class="text-5xl mb-3">${acc>=80?'🏆':acc>=60?'👍':'💪'}</div>
+      <h2 class="text-xl font-bold">完成！</h2>
+      <p class="text-slate-500 mt-2">${c}／${n} 答對 (${acc}%)</p>
+      <div class="mt-4 flex justify-center gap-2">
+        <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg" onclick="renderPractice()">再練一次</button>
+        <button class="px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg" onclick="setView('dashboard')">回主頁</button>
+      </div>
+    </div>`;
+    return;
+  }
+  const item = practiceSession.queue[practiceSession.idx];
+  const q = genQuestion(item);
+  const progress = Math.round(100 * practiceSession.idx / practiceSession.queue.length);
+  app.innerHTML = `<div class="max-w-3xl mx-auto">
+    <div class="mb-4"><div class="flex justify-between text-xs mb-1">
+      <span>🎯 ${practiceSession.idx+1}/${practiceSession.queue.length} · 正確 ${practiceSession.correct}｜錯 ${practiceSession.wrong}</span><span>${progress}%</span>
+    </div>
+    <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden"><div class="progress-bar h-full" style="width:${progress}%"></div></div></div>
+    <div id="qArea2"></div>
+  </div>`;
+  const target = $('#qArea2');
+  renderMCQSub(target, q, (correct) => {
+    if (correct) practiceSession.correct++; else practiceSession.wrong++;
+    scheduleReview(item.id, correct ? 2 : 0);
+    setTimeout(()=> { practiceSession.idx++; renderPractice(); }, 1100);
+  });
+}
+
+// ============ ERRORS VIEW ============
+let errorSession = null;
+function renderErrors() {
+  if (!errorSession) {
+    const errIds = getErrorProneIds();
+    if (!errIds.length) {
+      app.innerHTML = `<div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-xl text-center">
+        <div class="text-5xl mb-3">✨</div>
+        <h2 class="text-xl font-bold">目前沒有常錯題</h2>
+        <p class="text-slate-500 mt-2">多練習後若出現易錯詞素，系統會自動收集至此</p>
+      </div>`;
+      return;
+    }
+    app.innerHTML = `<div class="max-w-3xl mx-auto bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+      <h2 class="font-bold text-lg mb-2">⚠️ 錯題強化</h2>
+      <p class="text-sm text-slate-500 mb-4">針對最近答錯率高、反覆出錯的 <b>${errIds.length}</b> 個詞素重點練習</p>
+      <div class="max-h-64 overflow-auto scroll-thin mb-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+        ${errIds.slice(0, 20).map(id => {
+          const m = MORPHEMES.find(x => x.id === id); const s = state.srs[id];
+          const acc = s.reps ? Math.round(100 * s.correct / s.reps) : 0;
+          return `<div class="flex items-center gap-3 p-3 border-b border-slate-100 dark:border-slate-700 text-sm">
+            <span class="chip ${typeChipClass(m.type)}">${typeLabel(m.type)}</span>
+            <span class="mono font-bold text-indigo-600">${m.form}</span>
+            <span class="flex-1">${m.zh}</span>
+            <span class="text-xs text-red-600">${acc}% · ${s.lapses}次錯</span>
+          </div>`;
+        }).join('')}
+        ${errIds.length > 20 ? `<div class="p-2 text-xs text-slate-400 text-center">…另 ${errIds.length - 20} 個</div>` : ''}
+      </div>
+      <button id="startErr" class="w-full py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700">開始強化練習 →</button>
+    </div>`;
+    $('#startErr').onclick = () => {
+      const queue = errIds.slice(0, 20).map(id => MORPHEMES.find(m => m.id === id));
+      errorSession = { queue, idx:0, correct:0, wrong:0 };
+      renderErrors();
+    };
+    return;
+  }
+  if (errorSession.idx >= errorSession.queue.length) {
+    const n = errorSession.queue.length, c = errorSession.correct, acc = Math.round(100*c/n);
+    errorSession = null;
+    app.innerHTML = `<div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-xl text-center">
+      <div class="text-5xl mb-3">${acc>=80?'🏆':'💪'}</div>
+      <h2 class="text-xl font-bold">強化完成！</h2>
+      <p class="text-slate-500 mt-2">${c}／${n} 答對 (${acc}%)</p>
+      <button class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg" onclick="setView('dashboard')">回主頁</button>
+    </div>`;
+    return;
+  }
+  const item = errorSession.queue[errorSession.idx];
+  const q = genQuestion(item);
+  const progress = Math.round(100 * errorSession.idx / errorSession.queue.length);
+  app.innerHTML = `<div class="max-w-3xl mx-auto">
+    <div class="mb-4"><div class="flex justify-between text-xs mb-1">
+      <span>⚠️ ${errorSession.idx+1}/${errorSession.queue.length} · 正確 ${errorSession.correct}｜錯 ${errorSession.wrong}</span><span>${progress}%</span>
+    </div>
+    <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden"><div class="bg-red-500 h-full" style="width:${progress}%"></div></div></div>
+    <div id="qArea3"></div>
+  </div>`;
+  const target = $('#qArea3');
+  renderMCQSub(target, q, (correct) => {
+    if (correct) errorSession.correct++; else errorSession.wrong++;
+    scheduleReview(item.id, correct ? 2 : 0);
+    setTimeout(()=> { errorSession.idx++; renderErrors(); }, 1100);
+  });
+}
+
+// ============ BROWSE VIEW ============
+let browseFilter = { q:'', type:'all', cat:'all', sort:'form' };
+function renderBrowse() {
+  const cats = Array.from(new Set(MORPHEMES.map(m => m.cat))).sort();
+  app.innerHTML = `<div class="max-w-6xl mx-auto">
+    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-700 mb-4">
+      <div class="grid md:grid-cols-4 gap-3">
+        <input id="bQ" value="${browseFilter.q}" placeholder="🔍 搜尋形式、中英意思、例字…" class="md:col-span-2 px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-900 rounded-lg">
+        <select id="bType" class="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-900 rounded-lg">
+          <option value="all">全部類型</option>
+          <option value="prefix" ${browseFilter.type==='prefix'?'selected':''}>字首</option>
+          <option value="root" ${browseFilter.type==='root'?'selected':''}>字根</option>
+          <option value="suffix" ${browseFilter.type==='suffix'?'selected':''}>字尾</option>
+        </select>
+        <select id="bCat" class="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-900 rounded-lg">
+          <option value="all">全部分類</option>
+          ${cats.map(c => `<option value="${c}" ${browseFilter.cat===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="flex items-center gap-2 mt-3 text-xs text-slate-500 flex-wrap">
+        <span>排序：</span>
+        ${['form','box','recent'].map(s => `<button data-s="${s}" class="bSort px-2 py-1 rounded ${browseFilter.sort===s?'bg-indigo-600 text-white':'bg-slate-100 dark:bg-slate-700'}">${s==='form'?'字母':s==='box'?'熟練度':'最近學習'}</button>`).join('')}
+        <span class="ml-auto" id="bCount"></span>
+      </div>
+    </div>
+    <div id="bList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+  </div>`;
+  ['bQ','bType','bCat'].forEach(id => $('#'+id).oninput = $('#'+id).onchange = () => updateBrowse());
+  $$('.bSort').forEach(b => b.onclick = () => { browseFilter.sort = b.dataset.s; renderBrowse(); });
+  updateBrowse();
+}
+function updateBrowse() {
+  browseFilter.q = $('#bQ').value.trim().toLowerCase();
+  browseFilter.type = $('#bType').value;
+  browseFilter.cat = $('#bCat').value;
+  let items = MORPHEMES.slice();
+  if (browseFilter.type !== 'all') items = items.filter(m => m.type === browseFilter.type);
+  if (browseFilter.cat !== 'all') items = items.filter(m => m.cat === browseFilter.cat);
+  if (browseFilter.q) {
+    const q = browseFilter.q;
+    items = items.filter(m =>
+      m.form.toLowerCase().includes(q) ||
+      (m.zh||'').toLowerCase().includes(q) ||
+      (m.en||'').toLowerCase().includes(q) ||
+      (m.examples||[]).some(e => e.w.toLowerCase().includes(q) || e.m.toLowerCase().includes(q))
+    );
+  }
+  if (browseFilter.sort === 'form') items.sort((a,b) => a.form.localeCompare(b.form));
+  if (browseFilter.sort === 'box') items.sort((a,b) => ((state.srs[b.id]||{box:0}).box) - ((state.srs[a.id]||{box:0}).box));
+  if (browseFilter.sort === 'recent') items.sort((a,b) => ((state.srs[b.id]||{lastReview:0}).lastReview) - ((state.srs[a.id]||{lastReview:0}).lastReview));
+  $('#bCount').textContent = `${items.length} 項`;
+  $('#bList').innerHTML = items.map(m => {
+    const s = state.srs[m.id];
+    const box = s ? s.box : 0;
+    return `<div class="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-100 dark:border-slate-700 card cursor-pointer" onclick="showDetail('${m.id}')">
+      <div class="flex items-center justify-between">
+        <span class="chip ${typeChipClass(m.type)}">${typeLabel(m.type)}</span>
+        <div class="flex gap-0.5">${[0,1,2,3,4].map(i => `<div class="w-1.5 h-1.5 rounded-full ${i<box?'bg-indigo-500':'bg-slate-200 dark:bg-slate-600'}"></div>`).join('')}</div>
+      </div>
+      <div class="mono text-xl font-bold mt-2 text-indigo-600">${m.form}</div>
+      <div class="text-sm mt-1">${m.zh}</div>
+      <div class="text-xs text-slate-400 truncate">${m.en}</div>
+      ${m.examples && m.examples.length ? `<div class="text-xs text-slate-500 mt-2 truncate">e.g. ${m.examples.slice(0,3).map(e=>e.w).join(', ')}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+window.showDetail = function(id) {
+  const m = MORPHEMES.find(x => x.id === id);
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
+  modal.innerHTML = `<div class="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-auto">
+    <button class="absolute top-3 right-3 text-slate-400 hover:text-slate-600" onclick="this.parentElement.parentElement.remove()">✕</button>
+    ${renderMorphemeCard(m, true)}
+    <div class="mt-3 grid grid-cols-2 gap-2">
+      <button class="px-3 py-2 bg-slate-100 dark:bg-slate-700 rounded" onclick="this.parentElement.parentElement.parentElement.remove()">關閉</button>
+      <button class="px-3 py-2 bg-indigo-600 text-white rounded" onclick="this.parentElement.parentElement.parentElement.remove(); quickTest('${id}')">立即測驗</button>
+    </div>
+  </div>`;
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
+};
+window.quickTest = function(id) {
+  const item = MORPHEMES.find(x => x.id === id);
+  const q = genQuestion(item);
+  renderMCQ(q, (correct) => scheduleReview(id, correct ? 2 : 0), { header: '快速測驗' });
+};
+
+// ============ STATS VIEW ============
+function renderStats() {
+  const total = MORPHEMES.length;
+  const learned = state.stats.learnedIds.length;
+  const mastered = Object.values(state.srs).filter(s => s.box >= 4).length;
+  const acc = state.stats.totalAnswered ? Math.round(100 * state.stats.totalCorrect / state.stats.totalAnswered) : 0;
+
+  // Box distribution
+  const boxDist = [0,0,0,0,0,0];
+  Object.values(state.srs).forEach(s => { boxDist[s.box] += 1; });
+  const untouched = total - Object.keys(state.srs).length;
+
+  // History last 30 days
+  const days = [];
+  for (let i=29; i>=0; i--) { const d = new Date(); d.setDate(d.getDate()-i); days.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); }
+  const maxA = Math.max(1, ...days.map(dt => (state.stats.sessions.find(s=>s.date===dt)||{answered:0}).answered));
+
+  app.innerHTML = `<div class="max-w-5xl mx-auto space-y-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      ${statBox('已學詞素', `${learned} / ${total}`, 'text-indigo-600')}
+      ${statBox('已精熟', mastered, 'text-emerald-600')}
+      ${statBox('總作答', state.stats.totalAnswered, 'text-blue-600')}
+      ${statBox('正確率', acc+'%', 'text-green-600')}
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
+      <h3 class="font-bold mb-3">📦 熟練度分布（Leitner Boxes）</h3>
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center gap-2"><span class="w-16 text-slate-500">未學</span><div class="flex-1 bg-slate-100 dark:bg-slate-700 h-4 rounded overflow-hidden"><div class="bg-slate-400 h-full" style="width:${100*untouched/total}%"></div></div><span class="w-10 text-right mono">${untouched}</span></div>
+        ${boxDist.map((n,i) => `<div class="flex items-center gap-2">
+          <span class="w-16 text-slate-500">Box ${i}</span>
+          <div class="flex-1 bg-slate-100 dark:bg-slate-700 h-4 rounded overflow-hidden"><div class="h-full heat-${Math.min(5,i+1)}" style="width:${100*n/total}%"></div></div>
+          <span class="w-10 text-right mono">${n}</span>
+        </div>`).join('')}
+      </div>
+      <div class="text-xs text-slate-400 mt-2">Box 越高代表記憶越穩固、下次複習間隔越長。Box 5 = 90 天。</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
+      <h3 class="font-bold mb-3">📅 過去 30 天</h3>
+      <div class="flex items-end gap-0.5 h-32">
+        ${days.map(dt => {
+          const s = state.stats.sessions.find(x=>x.date===dt) || {answered:0,correct:0};
+          const pct = 100 * s.answered / maxA;
+          return `<div class="flex-1 flex items-end h-full group relative">
+            <div class="w-full bg-indigo-200 dark:bg-indigo-900 rounded-t" style="height:${Math.max(2,pct)}%">
+              <div class="progress-bar h-full rounded-t"></div>
+            </div>
+            <span class="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-0.5 rounded whitespace-nowrap">${dt}: ${s.answered}題 (${s.answered?Math.round(100*s.correct/s.answered):0}%)</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
+      <h3 class="font-bold mb-3">📂 分類學習進度</h3>
+      ${renderCategorySummary()}
+    </div>
+  </div>`;
+}
+function statBox(label, value, cls) {
+  return `<div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+    <div class="text-xs text-slate-500">${label}</div>
+    <div class="text-2xl font-bold ${cls} mt-1">${value}</div>
+  </div>`;
+}
+
+// ============ SETTINGS VIEW ============
+function renderSettings() {
+  app.innerHTML = `<div class="max-w-2xl mx-auto space-y-4">
+    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
+      <h3 class="font-bold mb-3">🎛️ 學習參數</h3>
+      <label class="block mb-3">
+        <div class="text-sm font-medium">每次「學新詞素」數量：<span id="npsVal">${state.settings.newPerSession}</span></div>
+        <input type="range" id="nps" min="3" max="30" value="${state.settings.newPerSession}" class="w-full">
+      </label>
+      <label class="block mb-3">
+        <div class="text-sm font-medium">每次「複習」批次大小：<span id="rbVal">${state.settings.reviewBatch}</span></div>
+        <input type="range" id="rb" min="5" max="50" value="${state.settings.reviewBatch}" class="w-full">
+      </label>
+      <div class="text-sm font-medium mt-4">題型組合</div>
+      <label class="flex items-center gap-2 mt-1 text-sm"><input type="checkbox" id="qm1" ${state.settings.questionMix.meaningFromForm?'checked':''}> 形式 → 意思</label>
+      <label class="flex items-center gap-2 mt-1 text-sm"><input type="checkbox" id="qm2" ${state.settings.questionMix.formFromMeaning?'checked':''}> 意思 → 形式</label>
+      <label class="flex items-center gap-2 mt-1 text-sm"><input type="checkbox" id="qm3" ${state.settings.questionMix.exampleToMorpheme?'checked':''}> 例字 → 詞素</label>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
+      <h3 class="font-bold mb-3">💾 資料備份</h3>
+      <p class="text-sm text-slate-500 mb-3">學習進度已自動同步到雲端（Google 帳號）。也可匯出為 JSON 備份。</p>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="exportBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">📥 匯出資料</button>
+        <button id="importBtn" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg">📤 匯入資料</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" class="hidden">
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-red-200 dark:border-red-900">
+      <h3 class="font-bold mb-3 text-red-700 dark:text-red-400">⚠️ 重設</h3>
+      <button id="resetBtn" class="px-4 py-2 bg-red-600 text-white rounded-lg">重設所有學習進度</button>
+    </div>
+    <div class="text-center text-xs text-slate-400" id="settingsFooter">Morpheme Master · 自我調整學習 · ☁ 雲端同步</div>
+  </div>`;
+
+  $('#nps').oninput = e => { state.settings.newPerSession = parseInt(e.target.value); $('#npsVal').textContent = e.target.value; saveState(); };
+  $('#rb').oninput = e => { state.settings.reviewBatch = parseInt(e.target.value); $('#rbVal').textContent = e.target.value; saveState(); };
+  ['qm1','qm2','qm3'].forEach((id, i) => {
+    const key = ['meaningFromForm','formFromMeaning','exampleToMorpheme'][i];
+    $('#'+id).onchange = e => { state.settings.questionMix[key] = e.target.checked; saveState(); };
+  });
+  $('#exportBtn').onclick = () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = 'morpheme-master-backup-' + todayStr() + '.json';
+    a.click(); URL.revokeObjectURL(url);
+    toast('已匯出備份');
+  };
+  $('#importBtn').onclick = () => $('#importFile').click();
+  $('#importFile').onchange = (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const imported = JSON.parse(reader.result);
+        if (!imported.srs || !imported.stats) throw new Error('格式錯誤');
+        state = { ...structuredClone(DEFAULT_STATE), ...imported, settings: {...DEFAULT_STATE.settings, ...(imported.settings||{})}, stats: {...DEFAULT_STATE.stats, ...(imported.stats||{})} };
+        saveState(); toast('匯入成功'); render();
+      } catch(err) { toast('匯入失敗：'+err.message); }
+    };
+    reader.readAsText(f);
+  };
+  $('#resetBtn').onclick = () => {
+    if (confirm('確定要清除所有學習進度？此動作無法復原。')) {
+      state = structuredClone(DEFAULT_STATE);
+      saveState(); toast('已重設'); render();
+    }
+  };
+}
+
+// ============ INIT ============
+function applyDark() {
+  if (state.settings.dark) document.documentElement.classList.add('dark');
+  else document.documentElement.classList.remove('dark');
+}
+$('#darkToggle').onclick = () => { state.settings.dark = !state.settings.dark; saveState(); applyDark(); };
+applyDark();
+
+$$('.sidebar-link').forEach(a => { a.addEventListener('click', () => setView(a.getAttribute('data-view'))); });
+
+// ============ AUTH ============
+// Google Sign-In
+$('#googleSignInBtn').onclick = async () => {
+  $('#loginError').classList.add('hidden');
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+  } catch(e) {
+    $('#loginError').textContent = '登入失敗：' + (e.message || e.code);
+    $('#loginError').classList.remove('hidden');
+  }
+};
+
+// Logout
+$('#logoutBtn').onclick = async () => {
+  if (confirm('確定要登出？本機進度仍會保留。')) {
+    await auth.signOut();
+  }
+};
+
+// Auth state listener — runs on page load and on login/logout
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    currentUser = user;
+    // Load cloud state (may override local)
+    await loadStateFromCloud(user.uid);
+    applyDark();
+    // Update sidebar user profile
+    const profile = $('#userProfile');
+    profile.classList.remove('hidden');
+    profile.classList.add('flex');
+    $('#userAvatar').src = user.photoURL || '';
+    $('#userName').textContent = user.displayName || user.email;
+    // Hide login screen and start app
+    $('#loginScreen').style.display = 'none';
+    setView(state.view || 'dashboard');
+  } else {
+    currentUser = null;
+    $('#userProfile').classList.add('hidden');
+    $('#userProfile').classList.remove('flex');
+    // Show login screen
+    $('#loginScreen').style.display = 'flex';
+  }
+});
+</script>
+</body>
+</html>
