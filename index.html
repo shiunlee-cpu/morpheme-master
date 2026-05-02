@@ -65,6 +65,34 @@ const db   = firebase.firestore();
   @media (max-width: 768px) { .hide-sm { display: none; } }
   .toast { animation: slide-up .3s ease; }
   @keyframes slide-up { from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+
+  /* ── Mobile responsive improvements ── */
+  @media (max-width: 640px) {
+    /* Larger tap targets for quiz buttons */
+    .answer-btn { min-height: 56px; font-size: 15px; padding: 12px 16px !important; }
+    /* Bigger morpheme form text on mobile */
+    .mobile-form-text { font-size: 2rem !important; }
+    /* Make dash cards more compact */
+    .dash-card-compact { padding: 12px !important; }
+    .dash-card-compact .text-2xl { font-size: 1.25rem; }
+    /* Reduce section padding */
+    .section-card { padding: 16px !important; }
+    /* Full-width grids collapse to 1 col */
+    .mobile-single-col { grid-template-columns: 1fr !important; }
+    /* Category summary bar narrower */
+    .cat-bar { width: 60px !important; }
+    /* Make header more compact */
+    #pageTitle { font-size: 1rem; }
+  }
+  /* Bottom nav scrollable on very small screens */
+  .mobile-nav-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .mobile-nav-bar::-webkit-scrollbar { display: none; }
+  .mobile-nav-item { min-width: 56px; flex-shrink: 0; }
+  /* Bigger interactive areas */
+  @media (max-width: 768px) {
+    button, .tap { -webkit-tap-highlight-color: transparent; }
+    .answer-btn { touch-action: manipulation; }
+  }
 </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen">
@@ -137,33 +165,59 @@ const db   = firebase.firestore();
   </aside>
 
   <!-- Mobile Nav -->
-  <div class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-40">
-    <div class="grid grid-cols-5 text-xs">
-      <a data-view="dashboard" class="sidebar-link tap flex flex-col items-center py-2">🏠<span>主頁</span></a>
-      <a data-view="learn" class="sidebar-link tap flex flex-col items-center py-2">📚<span>學習</span></a>
-      <a data-view="review" class="sidebar-link tap flex flex-col items-center py-2">🔁<span>複習</span></a>
-      <a data-view="errors" class="sidebar-link tap flex flex-col items-center py-2">⚠️<span>錯題</span></a>
-      <a data-view="browse" class="sidebar-link tap flex flex-col items-center py-2">🔍<span>字典</span></a>
+  <div class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-40 safe-area-bottom">
+    <div class="mobile-nav-bar flex text-xs" style="padding-bottom: env(safe-area-inset-bottom);">
+      <a data-view="dashboard" class="sidebar-link tap mobile-nav-item flex flex-col items-center justify-center py-2 gap-0.5 flex-1">
+        <span class="text-lg leading-none">🏠</span><span>主頁</span>
+      </a>
+      <a data-view="learn" class="sidebar-link tap mobile-nav-item flex flex-col items-center justify-center py-2 gap-0.5 flex-1">
+        <span class="text-lg leading-none">📚</span><span>學習</span>
+      </a>
+      <a data-view="review" class="sidebar-link tap mobile-nav-item flex flex-col items-center justify-center py-2 gap-0.5 flex-1 relative">
+        <span class="text-lg leading-none">🔁</span><span>複習</span>
+        <span id="mobileReviewBadge" class="absolute top-1 right-2 text-[9px] bg-indigo-500 text-white rounded-full w-4 h-4 flex items-center justify-center hidden"></span>
+      </a>
+      <a data-view="practice" class="sidebar-link tap mobile-nav-item flex flex-col items-center justify-center py-2 gap-0.5 flex-1">
+        <span class="text-lg leading-none">🎯</span><span>練習</span>
+      </a>
+      <a data-view="errors" class="sidebar-link tap mobile-nav-item flex flex-col items-center justify-center py-2 gap-0.5 flex-1 relative">
+        <span class="text-lg leading-none">⚠️</span><span>錯題</span>
+        <span id="mobileErrorBadge" class="absolute top-1 right-2 text-[9px] bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center hidden"></span>
+      </a>
+      <a data-view="browse" class="sidebar-link tap mobile-nav-item flex flex-col items-center justify-center py-2 gap-0.5 flex-1">
+        <span class="text-lg leading-none">🔍</span><span>字典</span>
+      </a>
+      <a data-view="stats" class="sidebar-link tap mobile-nav-item flex flex-col items-center justify-center py-2 gap-0.5 flex-1">
+        <span class="text-lg leading-none">📊</span><span>統計</span>
+      </a>
+      <a data-view="settings" class="sidebar-link tap mobile-nav-item flex flex-col items-center justify-center py-2 gap-0.5 flex-1">
+        <span class="text-lg leading-none">⚙️</span><span>設定</span>
+      </a>
     </div>
   </div>
 
   <!-- Main -->
   <main class="flex-1 min-w-0">
-    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-3 sticky top-0 z-30 backdrop-blur bg-opacity-80 dark:bg-opacity-80">
-      <div class="flex items-center justify-between gap-4">
-        <h2 id="pageTitle" class="font-bold text-lg">儀表板</h2>
-        <div class="flex items-center gap-3 text-sm">
-          <span class="hide-sm text-slate-500">今日已學 <b id="todayCount" class="text-indigo-600">0</b></span>
-          <span class="hide-sm text-slate-500">連續 <b id="streakCount" class="text-orange-600">0</b> 天</span>
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 md:px-6 py-2.5 sticky top-0 z-30 backdrop-blur bg-opacity-90 dark:bg-opacity-90">
+      <div class="flex items-center justify-between gap-2">
+        <h2 id="pageTitle" class="font-bold text-base md:text-lg">儀表板</h2>
+        <div class="flex items-center gap-2 md:gap-3 text-xs md:text-sm">
+          <span class="text-slate-500">今日 <b id="todayCount" class="text-indigo-600">0</b></span>
+          <span class="text-slate-400">|</span>
+          <span class="text-slate-500">🔥<b id="streakCount" class="text-orange-600">0</b></span>
+          <!-- User profile (desktop hidden, mobile inline) -->
+          <div id="userProfileMobile" class="md:hidden hidden items-center gap-1">
+            <img id="userAvatarMobile" src="" class="w-6 h-6 rounded-full object-cover border border-slate-200" alt="">
+          </div>
         </div>
       </div>
     </header>
-    <div id="app" class="p-4 md:p-6 pb-24 md:pb-6"></div>
+    <div id="app" class="p-3 sm:p-4 md:p-6 pb-28 md:pb-6"></div>
   </main>
 </div>
 
 <!-- Toast -->
-<div id="toast" class="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 hidden">
+<div id="toast" class="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 hidden" style="bottom: calc(env(safe-area-inset-bottom) + 72px)">
   <div class="toast bg-slate-900 dark:bg-slate-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm"></div>
 </div>
 
@@ -725,8 +779,11 @@ function genQuestion(item, mode) {
     return {
       type: 'mcq',
       mode,
-      prompt: `<div class="text-center py-4"><div class="text-sm text-slate-500 mb-2">下列<strong>${typeLabel(item.type)}</strong>「<span class="mono font-bold text-indigo-600 text-xl">${item.form}</span>」的意思是？</div></div>`,
-      options: opts.map(o => ({ label: `${o.zh} <span class="text-xs text-slate-400">(${o.en})</span>`, correct: o.id === item.id })),
+      prompt: `<div class="text-center py-3 md:py-4">
+        <div class="text-xs text-slate-400 mb-2">${typeLabel(item.type)}的意思是？</div>
+        <div class="mono font-bold text-indigo-600 text-3xl md:text-4xl mb-1">${item.form}</div>
+      </div>`,
+      options: opts.map(o => ({ label: `${o.zh} <span class="text-xs text-slate-400 block md:inline">${o.en}</span>`, correct: o.id === item.id })),
       item,
     };
   }
@@ -736,8 +793,12 @@ function genQuestion(item, mode) {
     return {
       type: 'mcq',
       mode,
-      prompt: `<div class="text-center py-4"><div class="text-sm text-slate-500 mb-2">意思為「<strong class="text-indigo-600">${item.zh}</strong>」的${typeLabel(item.type)}是？</div></div>`,
-      options: opts.map(o => ({ label: `<span class="mono font-bold">${o.form}</span>`, correct: o.id === item.id })),
+      prompt: `<div class="text-center py-3 md:py-4">
+        <div class="text-xs text-slate-400 mb-2">意思為下列的${typeLabel(item.type)}是？</div>
+        <div class="font-bold text-indigo-600 text-2xl md:text-3xl mb-1">${item.zh}</div>
+        <div class="text-sm text-slate-500">${item.en}</div>
+      </div>`,
+      options: opts.map(o => ({ label: `<span class="mono font-bold text-base">${o.form}</span>`, correct: o.id === item.id })),
       item,
     };
   }
@@ -749,8 +810,12 @@ function genQuestion(item, mode) {
     return {
       type: 'mcq',
       mode,
-      prompt: `<div class="text-center py-4"><div class="text-sm text-slate-500 mb-2">單字「<strong class="text-indigo-600 text-lg">${ex.w}</strong>」（${ex.m}）中含有的${typeLabel(item.type)}是？</div></div>`,
-      options: opts.map(o => ({ label: `<span class="mono font-bold">${o.form}</span> <span class="text-xs text-slate-500">(${o.zh})</span>`, correct: o.id === item.id })),
+      prompt: `<div class="text-center py-3 md:py-4">
+        <div class="text-xs text-slate-400 mb-2">下列單字含有哪個${typeLabel(item.type)}？</div>
+        <div class="font-bold text-indigo-600 text-2xl md:text-3xl mb-1">${ex.w}</div>
+        <div class="text-sm text-slate-500">${ex.m}</div>
+      </div>`,
+      options: opts.map(o => ({ label: `<span class="mono font-bold text-base">${o.form}</span> <span class="text-xs text-slate-500">${o.zh}</span>`, correct: o.id === item.id })),
       item,
     };
   }
@@ -804,6 +869,10 @@ function refreshBadges() {
   const errCount = getErrorProneIds().length;
   $('#reviewBadge').textContent = dueCount > 0 ? dueCount : '';
   $('#errorBadge').textContent = errCount > 0 ? errCount : '';
+  // Mobile nav badges
+  const mrb = $('#mobileReviewBadge'), meb = $('#mobileErrorBadge');
+  if (mrb) { mrb.textContent = dueCount > 9 ? '9+' : dueCount; mrb.classList.toggle('hidden', dueCount === 0); }
+  if (meb) { meb.textContent = errCount > 9 ? '9+' : errCount; meb.classList.toggle('hidden', errCount === 0); }
   const today = todayStr();
   const s = state.stats.sessions.find(x => x.date === today);
   $('#todayCount').textContent = s ? s.answered : 0;
@@ -823,25 +892,25 @@ function renderDashboard() {
   const progressPct = Math.round(100 * learned / total);
 
   app.innerHTML = `
-    <div class="max-w-6xl mx-auto space-y-6">
-      <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-        <div class="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div class="text-sm opacity-90">${new Date().toLocaleDateString('zh-TW', { weekday:'long' })}，${todayStr()}</div>
-            <h1 class="text-2xl font-bold mt-1">歡迎回來，${state.stats.streak ? '連續 '+state.stats.streak+' 天' : '開始你的學習旅程'} 🎉</h1>
-            <p class="opacity-90 mt-2 text-sm">目前已認識 <b>${learned}</b>／${total} 個詞素，掌握 <b>${mastered}</b> 個</p>
+    <div class="max-w-6xl mx-auto space-y-4 md:space-y-6">
+      <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 md:p-6 text-white shadow-lg">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="text-xs opacity-90">${new Date().toLocaleDateString('zh-TW', { weekday:'long' })}，${todayStr()}</div>
+            <h1 class="text-lg md:text-2xl font-bold mt-0.5 leading-snug">歡迎回來，${state.stats.streak ? '🔥 '+state.stats.streak+' 天' : '開始學習旅程 🎉'}</h1>
+            <p class="opacity-90 mt-1 text-xs md:text-sm">已認識 <b>${learned}</b>／${total} 個詞素，掌握 <b>${mastered}</b> 個</p>
           </div>
-          <div class="text-right">
-            <div class="text-4xl font-bold">${progressPct}%</div>
+          <div class="text-right flex-shrink-0">
+            <div class="text-3xl md:text-4xl font-bold">${progressPct}%</div>
             <div class="text-xs opacity-75">整體進度</div>
           </div>
         </div>
-        <div class="mt-4 bg-white/20 rounded-full h-2 overflow-hidden">
+        <div class="mt-3 bg-white/20 rounded-full h-2 overflow-hidden">
           <div class="bg-white h-full rounded-full transition-all" style="width:${progressPct}%"></div>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
         ${dashCard('📚', '待學', getUnlearnedIds().length, 'text-blue-600', ()=>setView('learn'))}
         ${dashCard('🔁', '到期複習', due, 'text-indigo-600', ()=>setView('review'))}
         ${dashCard('⚠️', '錯題', err, 'text-red-600', ()=>setView('errors'))}
@@ -1060,16 +1129,16 @@ function renderMCQ(q, onAnswer, opts) {
   opts = opts || {};
   app.innerHTML = `<div class="max-w-3xl mx-auto">
     ${opts.header ? `<div class="text-xs text-slate-500 mb-2">${opts.header}</div>` : ''}
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-4 md:p-6">
       ${q.prompt}
-      <div class="grid gap-2 mt-4" id="mcqOpts">
-        ${q.options.map((o, i) => `<button data-i="${i}" class="answer-btn tap text-left px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-lg hover:border-indigo-400 dark:hover:border-indigo-400">
-          <span class="text-xs text-slate-400 mono mr-2">${String.fromCharCode(65+i)}.</span>${o.label}
+      <div class="grid gap-2.5 mt-4" id="mcqOpts">
+        ${q.options.map((o, i) => `<button data-i="${i}" class="answer-btn tap text-left px-4 py-3.5 border-2 border-slate-200 dark:border-slate-600 rounded-xl hover:border-indigo-400 dark:hover:border-indigo-400 active:scale-[0.98] transition-transform">
+          <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 rounded-full mr-2 flex-shrink-0">${String.fromCharCode(65+i)}</span>${o.label}
         </button>`).join('')}
       </div>
       <div id="mcqFeedback" class="mt-4 hidden"></div>
     </div>
-    <div class="text-xs text-slate-400 text-center mt-3">按 <kbd>A</kbd>/<kbd>B</kbd>/<kbd>C</kbd>/<kbd>D</kbd> 或 <kbd>1</kbd>-<kbd>4</kbd> 選擇</div>
+    <div class="hide-sm text-xs text-slate-400 text-center mt-3">按 <kbd>A</kbd>/<kbd>B</kbd>/<kbd>C</kbd>/<kbd>D</kbd> 或 <kbd>1</kbd>-<kbd>4</kbd> 選擇</div>
   </div>`;
   let answered = false;
   function handle(i) {
